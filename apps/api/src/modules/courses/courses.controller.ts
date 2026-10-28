@@ -9,7 +9,7 @@ import type {
 } from '@vtmp/shared';
 import { AppError } from '../../core/errors';
 import { asyncHandler } from '../../core/http';
-import { membersByCourse } from '../batches/batches.service';
+import { capacityByCourse, liveBatchesByCourse, membersByCourse } from '../batches/batches.service';
 import { approvedFirstChoice } from '../enrollments/enrollments.service';
 import * as service from './courses.service';
 
@@ -28,11 +28,15 @@ async function seatsTaken(cycleId: string): Promise<Map<string, number>> {
 }
 
 export const catalogue = asyncHandler(async (req, res) => {
-  res.json(await service.catalogue(cycleIdQuery(req), seatsTaken));
+  res.json(await service.catalogue(cycleIdQuery(req), seatsTaken, capacityByCourse));
 });
 
 export const catalogueCourse = asyncHandler(async (req, res) => {
-  const { cycle, courses } = await service.catalogue(cycleIdQuery(req), seatsTaken);
+  const { cycle, courses } = await service.catalogue(
+    cycleIdQuery(req),
+    seatsTaken,
+    capacityByCourse,
+  );
   const course = courses.find((c) => c.id === req.params.id);
   if (!course) throw AppError.notFound('Course not found in this cycle');
   res.json({ cycle, course });
@@ -47,7 +51,7 @@ export const catalogueCycles = asyncHandler(async (_req, res) => {
 });
 
 export const listCourses = asyncHandler(async (_req, res) => {
-  res.json(await service.listCourses());
+  res.json(await service.listCourses(liveBatchesByCourse));
 });
 
 export const createCourse = asyncHandler(async (req, res) => {

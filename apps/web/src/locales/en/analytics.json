@@ -8,6 +8,8 @@
   "refreshBusy": "A refresh is already running. Try again in a minute.",
   "exportCsv": "Export CSV",
   "asOf": "Figures as of {{when}}",
+  "staleCertificates_one": "{{count}} certificate was issued after these figures were built. Refresh now to include it.",
+  "staleCertificates_other": "{{count}} certificates were issued after these figures were built. Refresh now to include them.",
   "neverRefreshed": "Not refreshed yet: press Refresh now.",
   "none": "—",
   "metric": {

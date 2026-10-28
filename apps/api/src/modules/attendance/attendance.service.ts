@@ -34,7 +34,9 @@ async function loadSession(sessionId: string) {
             orderBy: { student: { rollNo: 'asc' } },
             select: {
               studentId: true,
-              student: { select: { rollNo: true, user: { select: { fullName: true } } } },
+              student: {
+                select: { rollNo: true, user: { select: { fullName: true, isActive: true } } },
+              },
             },
           },
         },
@@ -49,6 +51,15 @@ async function loadSession(sessionId: string) {
 }
 
 type LoadedSession = Awaited<ReturnType<typeof loadSession>>;
+
+/**
+ * T2: students whose account was deactivated (they left) are not on the sheet any more, unless
+ * this session already holds a mark for them, so past records stay visible and editable.
+ */
+function sheetMembers(s: LoadedSession) {
+  const marked = new Set(s.attendance.map((x) => x.studentId));
+  return s.batch.students.filter((m) => m.student.user.isActive || marked.has(m.studentId));
+}
 
 function firstMarked(s: LoadedSession): Date | null {
   return s.attendance.reduce<Date | null>(
@@ -96,7 +107,7 @@ export async function sheet(viewer: Viewer, sessionId: string): Promise<Attendan
       topic: s.topic,
       status: s.status,
     },
-    rows: s.batch.students.map((m) => ({
+    rows: sheetMembers(s).map((m) => ({
       studentId: m.studentId,
       rollNo: m.student.rollNo,
       fullName: m.student.user.fullName,
@@ -146,9 +157,11 @@ export async function save(viewer: Viewer, sessionId: string, input: AttendanceS
     );
   }
 
+  // Everyone on the sheet must be marked; a deactivated student may be, but need not be.
+  const required = new Set(sheetMembers(s).map((m) => m.studentId));
   const roster = new Set(s.batch.students.map((m) => m.studentId));
   const sent = new Set(input.entries.map((e) => e.studentId));
-  const missing = [...roster].filter((id) => !sent.has(id));
+  const missing = [...required].filter((id) => !sent.has(id));
   const extra = [...sent].filter((id) => !roster.has(id));
   if (missing.length || extra.length) {
     throw AppError.unprocessable(

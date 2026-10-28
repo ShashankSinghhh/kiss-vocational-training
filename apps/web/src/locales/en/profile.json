@@ -14,16 +14,18 @@
   "changePassword": "Change password",
   "password": {
     "title": "Change password",
+    "mustChange": "Your password was set by the training office. Choose your own to continue: type the password you were given as the current password.",
     "current": "Current password",
     "new": "New password",
-    "newHint": "At least 8 characters. Other devices will be signed out.",
+    "newHint": "At least 8 characters with a letter and a digit. Other devices will be signed out.",
     "confirm": "Confirm new password",
     "mismatch": "Passwords do not match",
     "tooShort": "Use at least 8 characters",
     "sameAsCurrent": "Choose a password different from the current one",
     "required": "This field is required",
     "submit": "Change password",
-    "done": "Password changed"
+    "done": "Password changed",
+    "letterAndDigit": "Use at least one letter and one digit"
   },
   "validation": {
     "fullName": "Enter your full name (at least 2 characters)",

@@ -121,6 +121,13 @@ describe('completion queue (BRQ-9.4)', () => {
         { rule: 'RECOMMENDATION', passed: false, actual: null, required: true },
       ],
     });
+    // T1: the admin sees which mandatory assessment still lacks marks.
+    const mandatory = (
+      byId.get(w.students[1]!.studentId) as unknown as {
+        checks: Array<{ rule: string; missing?: string[] }>;
+      }
+    ).checks.find((c) => c.rule === 'MANDATORY_ASSESSMENTS');
+    expect(mandatory?.missing).toHaveLength(1);
 
     // TC-15: students and trainers can't reach the admin queue.
     const studentAuth = await auth(w.students[0]!.user.email);

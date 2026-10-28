@@ -18,7 +18,7 @@ import { trainerOwnsBatch } from '../../core/auth';
 import { prisma } from '../../core/db';
 import { batchEvents } from '../../core/events';
 import { AppError } from '../../core/errors';
-import { resultPercent } from './rules';
+import { heldInsideBatch, resultPercent } from './rules';
 
 interface Viewer extends Actor {
   userId: string;
@@ -63,11 +63,30 @@ async function load(id: string): Promise<AssessmentRow> {
 }
 
 async function assertBatchOpen(batchId: string, requireActive = false) {
-  const b = await prisma().batch.findUnique({ where: { id: batchId }, select: { status: true } });
+  const b = await prisma().batch.findUnique({
+    where: { id: batchId },
+    select: { status: true, startDate: true, endDate: true },
+  });
   if (!b) throw AppError.notFound('Batch not found');
   if (b.status === 'CLOSED') throw AppError.conflict('BATCH_CLOSED', 'This batch is closed');
   if (requireActive && b.status !== 'ACTIVE') {
     throw AppError.conflict('BATCH_NOT_ACTIVE', 'Marks are recorded only for active batches');
+  }
+  return b;
+}
+
+function assertHeldInsideBatch(
+  heldOn: string | null | undefined,
+  b: { startDate: Date; endDate: Date },
+): void {
+  if (!heldOn) return;
+  const batch = { start: day(b.startDate)!, end: day(b.endDate)! };
+  if (!heldInsideBatch(heldOn, batch)) {
+    throw AppError.unprocessable(
+      'HELD_OUTSIDE_BATCH',
+      `Choose a date between ${batch.start} and ${batch.end}, when the batch runs`,
+      [{ path: 'heldOn', message: `${batch.start} – ${batch.end}` }],
+    );
   }
 }
 
@@ -87,7 +106,7 @@ export async function create(
   batchId: string,
   input: AssessmentCreateInput,
 ): Promise<AssessmentDto> {
-  await assertBatchOpen(batchId);
+  assertHeldInsideBatch(input.heldOn, await assertBatchOpen(batchId));
   return withAudit(actor, async (tx, log) => {
     const a = await tx.assessment.create({
       data: {
@@ -118,7 +137,7 @@ export async function update(
   input: AssessmentUpdateInput,
 ): Promise<AssessmentDto> {
   const before = await load(id);
-  await assertBatchOpen(before.batchId);
+  assertHeldInsideBatch(input.heldOn, await assertBatchOpen(before.batchId));
   if (input.maxMarks !== undefined) {
     const top = await prisma().assessmentResult.aggregate({
       where: { assessmentId: id },

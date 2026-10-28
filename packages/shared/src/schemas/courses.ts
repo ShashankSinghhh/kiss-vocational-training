@@ -16,6 +16,8 @@ export const CourseCreateSchema = z
     description: z.string().trim().min(10).max(2000),
     durationWeeks: z.coerce.number().int().min(1).max(104),
     prerequisites: z.string().trim().max(500).nullable().optional(),
+    /** Automatic approval waits for a person to check the prerequisites (D2); default true. */
+    prerequisitesNeedReview: z.boolean().optional(),
     seatCapacity: z.coerce.number().int().min(1).max(1000),
   })
   .strict();
@@ -35,8 +37,11 @@ export interface AdminCourse {
   description: string;
   durationWeeks: number;
   prerequisites: string | null;
+  prerequisitesNeedReview: boolean;
   seatCapacity: number;
   isActive: boolean;
+  /** What deactivating it would affect (D4): live batches, students placed, open windows. */
+  inUse: { batches: number; students: number; openWindows: number };
 }
 
 // ─── Training cycles ──────────────────────────────────────────────────────────

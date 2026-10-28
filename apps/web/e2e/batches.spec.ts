@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
+import { addCoTrainer } from './world';
 
 async function token(request: APIRequestContext, email: string, password: string) {
   const res = await request.post('/api/v1/auth/login', { data: { email, password } });
@@ -125,6 +126,9 @@ test.describe('Sprint 4: allocate → trainer sees roster', () => {
     await page.getByRole('button', { name: 'Assign trainer' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Trainer assigned' })).toBeVisible();
 
+    // Many test batches share the seeded trainer at these times (see addCoTrainer).
+    await addCoTrainer(request, batch.id);
+    await page.reload();
     await page.getByRole('tab', { name: 'Sessions' }).click();
     await page.getByRole('button', { name: 'Schedule sessions' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();

@@ -50,7 +50,8 @@
     "recommendedYes": "हाँ",
     "recommendedNo": "नहीं",
     "recommendedNone": "अभी मूल्यांकन नहीं हुआ",
-    "noneYet": "अभी कुछ नहीं"
+    "noneYet": "अभी कुछ नहीं",
+    "missing": "बाकी: {{list}}"
   },
   "ruleShort": {
     "ATTENDANCE": "उपस्थिति न्यूनतम से कम",

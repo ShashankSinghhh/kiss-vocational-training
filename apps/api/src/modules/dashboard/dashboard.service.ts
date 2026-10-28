@@ -150,7 +150,12 @@ export async function student(studentId: string): Promise<StudentDashboard> {
     documents.forStudent(studentId),
     settings.get('attendance.minPercent'),
   ]);
-  const latest = applications[0];
+  // S4: the headline stays on the training in progress (then a batch place) even after the
+  // student applies for a later cycle; My enrollment lists every application.
+  const latest =
+    applications.find((e) => e.status === 'ACTIVE') ??
+    applications.find((e) => e.status === 'ALLOCATED') ??
+    applications[0];
   const current = trainings[0];
   const placement = placements[0];
   const next = mine.find((b) => b.nextSession)?.nextSession ?? null;

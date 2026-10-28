@@ -28,6 +28,8 @@
     "durationValue_one": "{{count}} week",
     "durationValue_other": "{{count}} weeks",
     "prerequisites": "Prerequisites",
+    "prerequisitesNeedReview": "A person checks the prerequisites before approval",
+    "prerequisitesNeedReviewHint": "Untick when every applicant meets them (for example \"Class 8 pass\"): automatic approval can then approve applications for this course.",
     "none": "None",
     "seatCapacity": "Seat capacity",
     "seatsRemaining": "Seats remaining",
@@ -109,6 +111,13 @@
     "isOpenHint": "Turn off to close applications immediately, whatever the dates.",
     "windowSaved": "Window saved",
     "noCycles": "No cycles yet. Add the first one.",
-    "invalid": "Check this field"
+    "invalid": "Check this field",
+    "confirmDeactivate": {
+      "title_one": "Deactivate a course that is in use?",
+      "title_other": "Deactivate {{count}} courses that are in use?",
+      "body": "Students already placed keep training and nothing is deleted, but the course disappears from the catalogue and its open enrollment windows stop taking applications.",
+      "usage": "{{batches}} planned or running batches, {{students}} students placed, {{windows}} open enrollment windows",
+      "confirm": "Deactivate anyway"
+    }
   }
 }

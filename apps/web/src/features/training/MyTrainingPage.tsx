@@ -234,9 +234,10 @@ function Ring({
       </svg>
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-slate-900"
+        className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-slate-900"
       >
-        {percent === null ? '—' : `${Math.round(percent)}%`}
+        {/* BR-08: two decimals, as everywhere else the figure is shown. */}
+        {percent === null ? '—' : `${percent.toFixed(2)}%`}
       </span>
     </div>
   );

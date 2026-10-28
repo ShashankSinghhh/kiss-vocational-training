@@ -24,6 +24,8 @@ export interface EligibilityCheck {
   actual: number | boolean | null;
   /** Attendance/aggregate: minimum percent. Mandatory: number of mandatory assessments. Recommendation: true. */
   required: number | boolean;
+  /** Mandatory: titles of the mandatory assessments with no marks yet for this student. */
+  missing?: string[];
 }
 
 export interface Eligibility {

@@ -6,7 +6,17 @@ export const PASSWORD_MAX_LENGTH = 72; // bcrypt ignores bytes beyond 72
 
 const email = z.string().trim().toLowerCase().email().max(254);
 
-export const PasswordSchema = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
+/**
+ * A4: at least 8 characters with a letter and a digit, so "aaaaaaaa" or "12345678" are refused.
+ * Login accepts any password (below); this applies when one is set.
+ */
+export const PasswordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH)
+  .max(PASSWORD_MAX_LENGTH)
+  .refine((p) => /\p{L}/u.test(p) && /\d/.test(p), {
+    message: 'Use at least one letter and one digit',
+  });
 
 export const LoginSchema = z.object({
   email,
@@ -54,6 +64,8 @@ export const MeSchema = z.object({
   fullName: z.string(),
   role: RoleSchema,
   locale: LocaleSchema,
+  /** The password was set by an admin: the user must choose their own before anything else. */
+  mustChangePassword: z.boolean(),
   student: z
     .object({
       id: z.string().uuid(),
@@ -88,6 +100,8 @@ const base = {
   fullName: z.string().trim().min(2).max(120),
   password: PasswordSchema,
   locale: LocaleSchema.default('en'),
+  /** Ask the user to choose their own password at first sign-in (A3); off unless sent. */
+  mustChangePassword: z.boolean().optional(),
 };
 
 export const AdminCreateUserSchema = z.discriminatedUnion('role', [
@@ -121,7 +135,13 @@ export const AdminUpdateUserSchema = z
 export type AdminUpdateUserInput = z.infer<typeof AdminUpdateUserSchema>;
 
 /** Admin sets a new password for someone who forgot theirs; it is shared with them privately. */
-export const AdminResetPasswordSchema = z.object({ password: PasswordSchema }).strict();
+export const AdminResetPasswordSchema = z
+  .object({
+    password: PasswordSchema,
+    /** Ask the user to choose their own at next sign-in; on unless sent as false. */
+    mustChangePassword: z.boolean().optional(),
+  })
+  .strict();
 export type AdminResetPasswordInput = z.infer<typeof AdminResetPasswordSchema>;
 
 export const UserListQuerySchema = z.object({

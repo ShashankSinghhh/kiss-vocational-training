@@ -1,4 +1,4 @@
-import { gradeBand, resultPercent, weightedAggregate } from '../rules';
+import { gradeBand, heldInsideBatch, resultPercent, weightedAggregate } from '../rules';
 
 const bands = { A: 85, B: 70, C: 55, D: 40 };
 
@@ -54,5 +54,18 @@ describe('resultPercent', () => {
   it('is marks ÷ max to two decimals', () => {
     expect(resultPercent(17, 20)).toBe(85);
     expect(resultPercent(1, 3)).toBe(33.33);
+  });
+});
+
+describe('assessment date inside the batch (T1)', () => {
+  const batch = { start: '2026-09-30', end: '2026-12-23' };
+  it.each([
+    ['2026-09-29', false],
+    ['2026-09-30', true],
+    ['2026-11-15', true],
+    ['2026-12-23', true],
+    ['2026-12-24', false],
+  ])('%s → %s', (day, inside) => {
+    expect(heldInsideBatch(day, batch)).toBe(inside);
   });
 });

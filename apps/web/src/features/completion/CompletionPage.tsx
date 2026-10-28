@@ -299,6 +299,9 @@ function Checklist({ row }: { row: CompletionRow }) {
           <span aria-hidden="true">{c.passed ? '✓ ' : '✗ '}</span>
           <span className="sr-only">{c.passed ? t('rule.passed') : t('rule.failed')}: </span>
           {t(`rule.${c.rule}`, { actual: value(c), required: c.required })}
+          {!c.passed && c.missing && (
+            <span className="block pl-4">{t('rule.missing', { list: c.missing.join(', ') })}</span>
+          )}
         </li>
       ))}
     </ul>

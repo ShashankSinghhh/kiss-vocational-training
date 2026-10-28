@@ -18,7 +18,8 @@ screenshot is taken automatically from a freshly seeded copy of the app
 ![Sign-in page](screenshots/public-login.jpg)
 
 1. Open the portal and sign in with your email and password. After 5 wrong passwords the
-   account locks for 15 minutes.
+   account locks for 15 minutes; the sign-in page then says "Wrong email or password, or the
+   account is locked", the same as for a wrong password, so nobody can tell which emails exist.
 2. You land on your role's dashboard. The sidebar lists everything you can do; every task is
    at most three clicks from the dashboard.
 3. **Language:** choose English, ଓଡ଼ିଆ (Odia) or हिन्दी (Hindi) at the top. The choice is saved to
@@ -133,6 +134,9 @@ Your batches, today's sessions and students who need attention.
 2. **Save attendance.** You can change it for 48 hours; after that only an admin can, with a
    reason, and the change is logged.
 
+A student whose account was deactivated (they left) is no longer on new attendance sheets;
+sessions already marked keep their mark.
+
 With a keyboard: Tab moves between students, the arrow keys choose Present / Late / Absent.
 
 ### Assessments and marks
@@ -140,7 +144,7 @@ With a keyboard: Tab moves between students, the arrow keys choose Present / Lat
 ![Assessments](screenshots/trainer-assessments.jpg)
 
 1. **Add assessment**: title, type (theory or practical), maximum marks, weightage, mandatory or
-   not.
+   not. Its date must fall within the batch's dates.
 2. **Enter marks** for each student (0 to the maximum; the form stops anything outside it).
 3. For practical assessments, **Evidence** lets you attach photos, PDFs or video links and score
    them against a rubric.
@@ -176,8 +180,15 @@ Counts, completion rate, escalated students, the application funnel and grade ch
 
 **Users** creates students, trainers and admins and deactivates accounts (sign-in stops at once).
 **Reset password** sets a new password for someone who forgot theirs (share it with them
-privately); it also unlocks a locked account and signs them out everywhere.
+privately); it also unlocks a locked account and signs them out everywhere. **Unlock** clears a
+lock straight away. When you add a user or reset a password, *Ask them to choose their own
+password at first sign-in* is ticked: they then see only *Change password* until they do. A
+trainer who is the only trainer of a planned or running batch can't be deactivated until
+another trainer is assigned to it.
 **Courses & cycles** manages courses, training cycles and the enrollment window of each course.
+Untick *A person checks the prerequisites before approval* on a course whose prerequisites every
+applicant meets (for example "Class 8 pass"), so automatic approval can approve it. Once a
+course has batches in a cycle, students see seats left in those batches.
 
 Both lists show only active records by default; pick *Inactive* or *All* in **Status** to see
 the rest. To tidy up, tick several rows (or the box above the list to select all shown) and use
@@ -273,8 +284,10 @@ shown.
 | Problem | What to do |
 | --- | --- |
 | Forgot password | Ask an admin: **Users → Reset password** sets a new one. |
-| "Account locked" | Wait 15 minutes, or ask an admin to reset the password (that unlocks it). |
+| "Wrong email or password, or the account is locked" | Check the email and password. After 5 wrong tries the account is locked for 15 minutes: wait, or ask an admin to **Unlock** it. |
+| New password refused | Use at least 8 characters with at least one letter and one digit. |
 | Can't edit attendance | The 48-hour window has passed: ask an admin to correct it. |
-| Not eligible to complete | The Completions page shows which rule fails (attendance, missing assessment, aggregate, recommendation). |
+| Not eligible to complete | The Completions page shows which rule fails (attendance, missing assessment by name, aggregate, recommendation). |
+| Sent to *Change password* at sign-in | The training office set your password: type it as the current password and choose your own. |
 | A shared passport link stopped working | It expired or the student revoked it: ask for a new link. |
 | Wrong language | Use the language menu at the top; it is remembered on your profile. |

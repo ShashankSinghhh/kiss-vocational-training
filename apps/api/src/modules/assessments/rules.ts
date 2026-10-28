@@ -1,5 +1,13 @@
 import type { Grade } from '@vtmp/shared';
 
+/**
+ * T1: an assessment's date (YYYY-MM-DD) must fall within its batch's dates, both inclusive, so
+ * a mandatory one can't be scheduled after the batch ends and block every student's completion.
+ */
+export function heldInsideBatch(heldOn: string, batch: { start: string; end: string }): boolean {
+  return heldOn >= batch.start && heldOn <= batch.end;
+}
+
 export interface ScoredItem {
   marks: number;
   maxMarks: number;

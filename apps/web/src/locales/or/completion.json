@@ -50,7 +50,8 @@
     "recommendedYes": "ହଁ",
     "recommendedNo": "ନା",
     "recommendedNone": "ଏବେ ମୂଲ୍ୟାଙ୍କନ ହୋଇନି",
-    "noneYet": "ଏବେ କିଛି ନାହିଁ"
+    "noneYet": "ଏବେ କିଛି ନାହିଁ",
+    "missing": "ବାକି: {{list}}"
   },
   "ruleShort": {
     "ATTENDANCE": "ଉପସ୍ଥିତି ସର୍ବନିମ୍ନଠାରୁ କମ୍",

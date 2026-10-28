@@ -5,6 +5,8 @@ export interface CompletionFacts {
   attendancePercent: number | null;
   mandatoryTotal: number;
   mandatoryRecorded: number;
+  /** Titles of the mandatory assessments still without marks (shown to the admin, T1). */
+  mandatoryMissing?: string[];
   /** Weighted aggregate over recorded assessments; null when nothing is recorded. */
   aggregate: number | null;
   /** Trainer's final recommendation; null when not evaluated yet. */
@@ -34,6 +36,7 @@ export function eligibility(facts: CompletionFacts, t: CompletionThresholds): El
       passed: facts.mandatoryRecorded >= facts.mandatoryTotal,
       actual: facts.mandatoryRecorded,
       required: facts.mandatoryTotal,
+      ...(facts.mandatoryMissing?.length ? { missing: facts.mandatoryMissing } : {}),
     },
     {
       rule: 'AGGREGATE',

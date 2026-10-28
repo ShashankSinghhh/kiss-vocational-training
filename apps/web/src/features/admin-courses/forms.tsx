@@ -20,6 +20,7 @@ const CourseForm = z.object({
   description: z.string().trim().min(10).max(2000),
   durationWeeks: z.coerce.number().int().min(1).max(104),
   prerequisites: z.string().trim().max(500),
+  prerequisitesNeedReview: z.boolean(),
   seatCapacity: z.coerce.number().int().min(1).max(1000),
 });
 type CourseValues = z.input<typeof CourseForm>;
@@ -56,6 +57,7 @@ export function CourseFormModal({
               description: '',
               durationWeeks: 12,
               prerequisites: '',
+              prerequisitesNeedReview: true,
               seatCapacity: 30,
             },
       );
@@ -69,6 +71,7 @@ export function CourseFormModal({
       description: v.description,
       durationWeeks: v.durationWeeks,
       prerequisites: v.prerequisites || null,
+      prerequisitesNeedReview: v.prerequisitesNeedReview,
       seatCapacity: v.seatCapacity,
     };
     try {
@@ -159,6 +162,15 @@ export function CourseFormModal({
             error={err('prerequisites')}
             {...register('prerequisites')}
           />
+          <label className="mt-2 flex items-center gap-2 text-sm text-slate-800">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-400 text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600"
+              {...register('prerequisitesNeedReview')}
+            />
+            {t('fields.prerequisitesNeedReview')}
+          </label>
+          <p className="mt-1 text-xs text-slate-600">{t('fields.prerequisitesNeedReviewHint')}</p>
         </div>
       </form>
     </Modal>

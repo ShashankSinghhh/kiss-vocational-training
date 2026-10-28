@@ -76,6 +76,28 @@ describe('taking attendance (BRQ-5.1, BR-05, BR-06)', () => {
     expect(extra.body.error.code).toBe('ROSTER_MISMATCH');
   });
 
+  it('a deactivated student drops off later sheets but stays where already marked (T2)', async () => {
+    const w = await world({ sessions: 2 });
+    const [first, second] = w.sessions;
+    await put(first!.id, w.trainerAuth, all(w.students)).expect(200);
+    const gone = w.students[2]!;
+    await prisma().user.update({ where: { id: gone.user.id }, data: { isActive: false } });
+
+    const later = await request(app)
+      .get(`/api/v1/sessions/${second!.id}/attendance`)
+      .set(w.trainerAuth);
+    expect(later.body.rows.map((r: { studentId: string }) => r.studentId)).not.toContain(
+      gone.studentId,
+    );
+    // Saving without them is fine now.
+    expect((await put(second!.id, w.trainerAuth, all(w.students.slice(0, 2)))).status).toBe(200);
+    // The earlier session still shows their mark.
+    const earlier = await request(app)
+      .get(`/api/v1/sessions/${first!.id}/attendance`)
+      .set(w.trainerAuth);
+    expect(earlier.body.rows).toHaveLength(3);
+  });
+
   it('refuses sessions that have not started, cancelled sessions and inactive batches', async () => {
     const w = await world();
     const future = await prisma().trainingSession.create({

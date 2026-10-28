@@ -442,3 +442,8 @@ export async function recordVerification(code: string): Promise<void> {
     data: { verificationCount: { increment: 1 } },
   });
 }
+
+/** D7: certificates issued after a moment (every certificate when it is null). */
+export async function issuedSince(since: Date | null): Promise<number> {
+  return prisma().certificate.count({ where: since ? { issuedAt: { gt: since } } : {} });
+}

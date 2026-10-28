@@ -45,6 +45,7 @@ async function assess(batchId: string, studentId: string, enrollmentId: string):
       attendancePercent: figures.percent,
       mandatoryTotal: mandatory.length,
       mandatoryRecorded: mandatory.filter((r) => r.marks !== null).length,
+      mandatoryMissing: mandatory.filter((r) => r.marks === null).map((r) => r.title),
       aggregate,
       recommended: evaluation ? evaluation.recommended : null,
     },

@@ -188,6 +188,14 @@ export function AnalyticsPage() {
               : t('neverRefreshed')}
           </p>
         )}
+        {o && o.certificatesSinceRefresh > 0 && (
+          <p
+            role="status"
+            className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900"
+          >
+            {t('staleCertificates', { count: o.certificatesSinceRefresh })}
+          </p>
+        )}
       </div>
 
       {outcomes.isPending ? (

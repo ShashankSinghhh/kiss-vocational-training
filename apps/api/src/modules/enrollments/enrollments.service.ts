@@ -49,6 +49,7 @@ const enrollmentInclude = {
           title: true,
           isActive: true,
           prerequisites: true,
+          prerequisitesNeedReview: true,
           offerings: {
             select: {
               cycleId: true,
@@ -180,7 +181,11 @@ export async function setAutoApproval(actor: Actor, input: AutoApproval): Promis
 }
 
 const coursesOf = (e: EnrollmentRow) =>
-  e.preferences.map((p) => ({ title: p.course.title, prerequisites: p.course.prerequisites }));
+  e.preferences.map((p) => ({
+    title: p.course.title,
+    // D2: prerequisites every applicant meets (e.g. "Class 8 pass") don't need a person.
+    prerequisites: p.course.prerequisitesNeedReview ? p.course.prerequisites : null,
+  }));
 
 const AUTO_APPROVED = {
   type: 'ENROLLMENT_APPROVED' as const,

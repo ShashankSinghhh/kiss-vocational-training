@@ -125,18 +125,20 @@ enum LearningResourceType {
 // ─── Identity and access ───────────────────────────────────────────────────────
 
 model User {
-  id               String    @id @default(uuid()) @db.Uuid
-  email            String    @unique
-  passwordHash     String    @map("password_hash")
-  fullName         String    @map("full_name")
-  role             Role
-  locale           Locale    @default(en)
-  isActive         Boolean   @default(true) @map("is_active")
-  failedLoginCount Int       @default(0) @map("failed_login_count")
-  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz(3)
-  lastLoginAt      DateTime? @map("last_login_at") @db.Timestamptz(3)
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String    @id @default(uuid()) @db.Uuid
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  fullName           String    @map("full_name")
+  role               Role
+  locale             Locale    @default(en)
+  isActive           Boolean   @default(true) @map("is_active")
+  failedLoginCount   Int       @default(0) @map("failed_login_count")
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  /// Set when an admin chose the password (new account or reset); cleared when the user changes it.
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  lastLoginAt        DateTime? @map("last_login_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   student       Student?
   trainer       Trainer?
@@ -243,16 +245,18 @@ model Trainer {
 // ─── Courses and enrollment (F2, F3) ───────────────────────────────────────────
 
 model Course {
-  id            String   @id @default(uuid()) @db.Uuid
-  code          String   @unique
-  title         String
-  description   String
-  durationWeeks Int      @map("duration_weeks")
-  prerequisites String?
-  seatCapacity  Int      @map("seat_capacity")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                      String   @id @default(uuid()) @db.Uuid
+  code                    String   @unique
+  title                   String
+  description             String
+  durationWeeks           Int      @map("duration_weeks")
+  prerequisites           String?
+  /// Automatic approval holds applications naming this course for a person while true.
+  prerequisitesNeedReview Boolean  @default(true) @map("prerequisites_need_review")
+  seatCapacity            Int      @map("seat_capacity")
+  isActive                Boolean  @default(true) @map("is_active")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   offerings    CourseOffering[]
   preferences  EnrollmentPreference[]

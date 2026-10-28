@@ -25,9 +25,9 @@
     "badgeDown": "ऑफ़लाइन"
   },
   "tiles": {
-    "students": "सक्रिय विद्यार्थी",
+    "students": "विद्यार्थी खाते",
     "courses": "सक्रिय पाठ्यक्रम",
-    "trainers": "सक्रिय प्रशिक्षक",
+    "trainers": "प्रशिक्षक खाते",
     "activeBatches": "प्रशिक्षण में बैच",
     "plannedBatches": "{{count}} योजनाबद्ध · {{closed}} बंद",
     "completionRate": "समापन दर",

@@ -50,7 +50,8 @@
     "recommendedYes": "yes",
     "recommendedNo": "no",
     "recommendedNone": "not evaluated yet",
-    "noneYet": "none yet"
+    "noneYet": "none yet",
+    "missing": "Missing: {{list}}"
   },
   "ruleShort": {
     "ATTENDANCE": "Attendance below the minimum",

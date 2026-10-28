@@ -16,7 +16,7 @@ test.describe('sign in (BRQ-1.1, BRQ-1.2)', () => {
 
   test('wrong password shows a generic error', async ({ page }) => {
     await signIn(page, ACCOUNTS.STUDENT, 'not-the-password', { expectSuccess: false });
-    await expect(page.getByRole('alert')).toHaveText('Invalid email or password.');
+    await expect(page.getByRole('alert')).toHaveText(/^Wrong email or password/);
     await expect(page).toHaveURL(/\/login/);
   });
 
@@ -90,10 +90,18 @@ test.describe('admin user management', () => {
       page.getByRole('status').filter({ hasText: 'E2E Student was added' }),
     ).toBeVisible();
 
-    // The new account works in a separate browser context.
+    // The new account works in a separate browser context, after choosing its own password.
     const other = await browser.newContext();
     const studentPage = await other.newPage();
-    await signIn(studentPage, email, 'E2e-Start-Pass1');
+    await signIn(studentPage, email, 'E2e-Start-Pass1', { expectSuccess: false });
+    await expect(studentPage).toHaveURL('/profile/password');
+    await expect(studentPage.getByRole('status')).toContainText('set by the training office');
+    await studentPage.goto('/student/courses');
+    await expect(studentPage).toHaveURL('/profile/password');
+    await studentPage.getByLabel('Current password').fill('E2e-Start-Pass1');
+    await studentPage.getByLabel(/^New password/).fill('E2e-Own-Pass-3');
+    await studentPage.getByLabel('Confirm new password').fill('E2e-Own-Pass-3');
+    await studentPage.getByRole('button', { name: 'Change password' }).click();
     await expect(studentPage).toHaveURL('/student');
     await other.close();
 
@@ -147,8 +155,8 @@ test.describe('admin user management', () => {
 
     const other = await browser.newContext();
     const studentPage = await other.newPage();
-    await signIn(studentPage, email, 'E2e-Fresh-Pass2');
-    await expect(studentPage).toHaveURL('/student');
+    await signIn(studentPage, email, 'E2e-Fresh-Pass2', { expectSuccess: false });
+    await expect(studentPage).toHaveURL('/profile/password');
     await other.close();
   });
 

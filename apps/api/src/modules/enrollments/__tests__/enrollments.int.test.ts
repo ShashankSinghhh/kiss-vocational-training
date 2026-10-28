@@ -645,3 +645,36 @@ describe('overlapping trainings', () => {
     expect(left.status).toBe('PENDING');
   });
 });
+
+describe('prerequisites that need no person (D2)', () => {
+  it('automatic approval approves when the course says its prerequisites need no check', async () => {
+    const admin = await signedIn(Role.ADMIN);
+    const rules = (body: Record<string, unknown>) =>
+      request(app).put('/api/v1/admin/enrollments/auto-approval').set(admin.auth).send(body);
+    await rules({ enabled: true, minCgpa: 0, manualIfPrerequisites: true }).expect(200);
+    try {
+      const { cycle, courses } = await createOpenCycle(prisma(), 2);
+      await prisma().course.update({
+        where: { id: courses[0]!.id },
+        data: { prerequisites: 'Class 8 pass', prerequisitesNeedReview: false },
+      });
+      await prisma().course.update({
+        where: { id: courses[1]!.id },
+        data: { prerequisites: 'Basic tailoring', prerequisitesNeedReview: true },
+      });
+      const a = await signedIn(Role.STUDENT);
+      const b = await signedIn(Role.STUDENT);
+      expect((await apply(a.auth, cycle.id, [courses[0]!.id])).body.status).toBe('APPROVED');
+      expect((await apply(b.auth, cycle.id, [courses[1]!.id])).body.status).toBe('PENDING');
+
+      // The admin can switch it per course.
+      const edited = await request(app)
+        .patch(`/api/v1/admin/courses/${courses[1]!.id}`)
+        .set(admin.auth)
+        .send({ prerequisitesNeedReview: false });
+      expect(edited.body.prerequisitesNeedReview).toBe(false);
+    } finally {
+      await rules({ enabled: false, minCgpa: 0, manualIfPrerequisites: true }).expect(200);
+    }
+  });
+});

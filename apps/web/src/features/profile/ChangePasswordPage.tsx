@@ -8,6 +8,7 @@ import { Button, Card, Input } from '../../components/ui';
 import { useToast } from '../../components/toast';
 import { ApiError, api } from '../../lib/api/client';
 import { useErrorMessage } from '../../lib/api/useErrorMessage';
+import { ROLE_HOME, useAuth } from '../../lib/auth';
 
 // Error messages here are i18n keys, translated at render time.
 const FormSchema = z
@@ -16,7 +17,8 @@ const FormSchema = z
     newPassword: z
       .string()
       .min(PASSWORD_MIN_LENGTH, 'password.tooShort')
-      .max(PASSWORD_MAX_LENGTH, 'password.tooShort'),
+      .max(PASSWORD_MAX_LENGTH, 'password.tooShort')
+      .refine((p) => /\p{L}/u.test(p) && /\d/.test(p), 'password.letterAndDigit'),
     confirmPassword: z.string().min(1, 'password.required'),
   })
   .refine((v) => v.newPassword === v.confirmPassword, {
@@ -34,6 +36,8 @@ export function ChangePasswordPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const errorMessage = useErrorMessage();
+  const { user, setUser } = useAuth();
+  const forced = !!user?.mustChangePassword;
   const {
     register,
     handleSubmit,
@@ -45,7 +49,8 @@ export function ChangePasswordPage() {
     try {
       await api.post('/users/me/password', { currentPassword, newPassword });
       toast.show({ tone: 'success', title: t('password.done') });
-      navigate('/profile');
+      if (user) setUser({ ...user, mustChangePassword: false });
+      navigate(forced && user ? ROLE_HOME[user.role] : '/profile');
     } catch (err) {
       if (err instanceof ApiError && err.code === 'INVALID_CURRENT_PASSWORD') {
         setError('currentPassword', { message: errorMessage(err) }, { shouldFocus: true });
@@ -61,6 +66,14 @@ export function ChangePasswordPage() {
   return (
     <div className="flex max-w-md flex-col gap-6">
       <h1 className="text-2xl font-bold text-slate-900">{t('password.title')}</h1>
+      {forced && (
+        <p
+          role="status"
+          className="rounded-md border border-brand-200 bg-brand-50 p-3 text-sm text-brand-900"
+        >
+          {t('password.mustChange')}
+        </p>
+      )}
       <Card>
         <form noValidate onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-4">
           <Input

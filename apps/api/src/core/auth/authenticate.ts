@@ -5,6 +5,17 @@ import { AppError } from '../errors';
 import { verifyAccessToken } from './tokens';
 
 /**
+ * What a user whose password an admin set may still do before choosing their own (A3): see who
+ * they are, change the password or language, and load the notification bell of the page.
+ */
+const ALLOWED_BEFORE_PASSWORD_CHANGE = new Set([
+  'GET /api/v1/auth/me',
+  'POST /api/v1/users/me/password',
+  'PATCH /api/v1/users/me',
+  'GET /api/v1/notifications/me',
+]);
+
+/**
  * Verifies the Bearer access token and loads the user. The DB lookup means deactivation and
  * role changes take effect on the next request rather than when the token expires.
  */
@@ -27,12 +38,21 @@ export const authenticate: RequestHandler = (req, _res, next) => {
         role: true,
         locale: true,
         isActive: true,
+        mustChangePassword: true,
         student: { select: { id: true } },
         trainer: { select: { id: true } },
       },
     })
     .then((user) => {
       if (!user || !user.isActive) throw AppError.unauthorized('Account is not active');
+      const route = `${req.method} ${req.originalUrl.split('?')[0]}`;
+      if (user.mustChangePassword && !ALLOWED_BEFORE_PASSWORD_CHANGE.has(route)) {
+        throw new AppError(
+          403,
+          'PASSWORD_CHANGE_REQUIRED',
+          'Choose your own password before continuing',
+        );
+      }
       req.user = {
         id: user.id,
         role: user.role,

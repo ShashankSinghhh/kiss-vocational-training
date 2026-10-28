@@ -134,12 +134,18 @@ export interface BookedSlot extends TimedSlot {
 export interface SlotClash<T extends BookedSlot> {
   kind: 'VENUE' | 'TRAINER';
   /**
-   * Hard clashes block saving: the same venue, or the same trainer named on both sessions.
-   * A trainer who only teaches through batch assignment gives a soft warning.
+   * Hard clashes block saving: the same venue, or the same trainer certainly teaching both
+   * sessions (named on it, or the batch's only trainer). When a batch has several trainers and
+   * the session names none, any of them might teach it, so that clash is a soft warning.
    */
   hard: boolean;
   other: T;
   trainerId?: string;
+}
+
+/** The trainer who certainly teaches a session: the one named on it, or the batch's only one. */
+function definiteTrainer(s: BookedSlot): string | null {
+  return s.explicitTrainerId ?? (s.trainerIds.length === 1 ? s.trainerIds[0]! : null);
 }
 
 /** Every clash between one slot and a set of other bookings (BR-20). */
@@ -153,7 +159,7 @@ export function clashesFor<T extends BookedSlot>(
     if (sameVenue(slot.venue, other.venue)) out.push({ kind: 'VENUE', hard: true, other });
     for (const t of slot.trainerIds) {
       if (!other.trainerIds.includes(t)) continue;
-      const hard = slot.explicitTrainerId === t && other.explicitTrainerId === t;
+      const hard = definiteTrainer(slot) === t && definiteTrainer(other) === t;
       out.push({ kind: 'TRAINER', hard, other, trainerId: t });
     }
   }

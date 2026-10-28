@@ -51,7 +51,7 @@ describe('POST /auth/login (TC-01)', () => {
       expect(res.status).toBe(401);
       expect(res.body.error).toEqual({
         code: 'INVALID_CREDENTIALS',
-        message: 'Invalid email or password',
+        message: expect.stringContaining('Invalid email or password'),
       });
     }
   });
@@ -64,9 +64,12 @@ describe('POST /auth/login (TC-01)', () => {
     // Fifth failure triggers the lock.
     expect((await login(app, user.email, 'nope')).res.status).toBe(401);
 
+    // Locked: even the right password gets the same answer as an unknown email (A5).
     const locked = await login(app, user.email, TEST_PASSWORD);
-    expect(locked.res.status).toBe(429);
-    expect(locked.res.body.error.code).toBe('ACCOUNT_LOCKED');
+    expect(locked.res.status).toBe(401);
+    expect(locked.res.body.error.code).toBe('INVALID_CREDENTIALS');
+    const unknown = await login(app, `nobody-${user.email}`, TEST_PASSWORD);
+    expect(unknown.res.body).toEqual(locked.res.body);
 
     const row = await prisma().user.findUniqueOrThrow({ where: { id: user.id } });
     expect(row.lockedUntil!.getTime()).toBeGreaterThan(Date.now() + 14 * 60_000);

@@ -185,6 +185,93 @@ A full test run of every screen and process found four high-severity problems (r
 
 ---
 
+## After Sprint 13 — Medium-severity fixes from the site test run (2026-10-28)
+
+The eight medium-severity items of the test-run report, all fixed. One migration
+(`20261028100000_password_change_and_prerequisite_review`) adds two columns with defaults.
+
+### Built
+- **A3 Choose your own password:** `users.must_change_password`. Set when an admin creates an
+  account with `mustChangePassword` (the Users form ticks it by default) or resets a password
+  (default on). While set, `authenticate` answers 403 `PASSWORD_CHANGE_REQUIRED` on everything
+  except `GET /auth/me`, `POST /users/me/password`, `PATCH /users/me` and
+  `GET /notifications/me`; the web app sends the user to *Change password*. Changing it clears
+  the flag. `Me` carries `mustChangePassword`.
+- **A2 Unlock:** `POST /admin/users/:id/unlock` clears a login lock (audited `USER_UNLOCKED`);
+  **Unlock** shows on locked rows.
+- **D3 Trainer still needed:** deactivating (single or bulk) the only trainer of a planned or
+  active batch is refused with 409 `TRAINER_STILL_NEEDED`, naming the batches
+  (`batches.batchesOnlyTaughtBy`).
+- **T1 Assessment dates:** an assessment's date must fall within its batch's dates (422
+  `HELD_OUTSIDE_BATCH`; pure rule `heldInsideBatch`). The completion check for mandatory
+  assessments lists the ones still without marks (`missing`).
+- **T3 Trainer clashes:** a session with no named trainer is taught by the batch's trainers;
+  a clash is hard when the same trainer certainly teaches both (named, or the batch's only
+  trainer), soft when the batch has several. Before, only explicitly named trainers clashed.
+- **T2 Students who left:** attendance sheets leave out deactivated students unless the session
+  already holds their mark, saves no longer require them, and the risk check skips them.
+- **S2 Seats:** once a course has batches in a cycle, the catalogue's seats are the total
+  capacity of its open batches (`batches.capacityByCourse`); until then the course's plan.
+- **D2 Prerequisites:** `courses.prerequisites_need_review` (default true). Unticked, automatic
+  approval ignores that course's prerequisites (e.g. "Class 8 pass" that everyone meets).
+- Tests: +13 API tests; e2e: first sign-in password change. Access-matrix snapshot +1 route
+  (165). The e2e world gives each test batch a co-trainer, because test batches share the
+  seeded trainer at the same times, which T3 now rightly treats as a clash.
+
+### Deviations from BRD/TAD (and why)
+- BR-20 / BRQ-14.2 treated only trainers named on both sessions as a hard clash. A batch's only
+  trainer is now treated as named, because otherwise the usual case (sessions that name nobody)
+  was never checked.
+
+### Known gaps / follow-ups
+- The seed keeps every course's prerequisites needing review; untick them for the demo if
+  automatic approval should approve applications for "Class 8 pass" courses.
+- The low-severity items of the report remain open.
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (defaults cover new
+  columns) · [x] strings externalized (en, hi, or)
+
+---
+
+## After Sprint 13 — Low-severity fixes from the site test run (2026-10-28)
+
+Eight of the ten low-severity items fixed; one was already handled and one conflicts with a
+project rule (both below).
+
+### Built
+- **A4 Passwords:** a new password needs at least one letter and one digit as well as 8
+  characters (shared `PasswordSchema`; Unicode letters count, so Odia/Hindi passwords work).
+  Sign-in still accepts any password.
+- **A5 One answer for every failed sign-in:** a locked account now gets the same 401
+  `INVALID_CREDENTIALS` as an unknown email or a wrong password (the password is not checked
+  while locked), and the message mentions the lock. This reverses the Sprint 1 choice of a
+  separate 429 `ACCOUNT_LOCKED` "accepted for usability": that answer told anyone the email
+  exists, and admins can now unlock accounts.
+- **S3** My training shows attendance with two decimals (BR-08), as the dashboard does.
+- **S4** The student dashboard's headline stays on the training in progress (then a batch
+  place) after the student applies for a later cycle.
+- **D4** Deactivating a course that has planned or running batches, placed students or open
+  windows asks for confirmation and lists them (`AdminCourse.inUse`).
+- **D5** `useBatch` sends no request until a batch is chosen (no more 404 on Completion).
+- **D6** Dashboard tiles say "Student accounts" / "Trainer accounts" (they count accounts).
+- **D7** Outcome analytics says how many certificates were issued after its figures were built
+  (`certificatesSinceRefresh`), next to *Refresh now*.
+- Tests: +4 API tests; the lock-out test now checks the locked and unknown answers are identical.
+
+### Not changed (and why)
+- **S5** was already handled: the Assistant page says "Your course has no approved materials
+  yet. Ask your trainer." The test run only looked at the API.
+- **P2** (a higher limit for certificate checks) would break CLAUDE.md rule 7 and NFR-09 (30
+  requests per minute per IP on public endpoints). The limit is the setting
+  `public.rateLimitPerMin`; raise it deliberately if a placement drive needs more.
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (no new data) ·
+  [x] strings externalized (en, hi, or)
+
+---
+
 ## Sprint 13 — Hardening, quality and final submission (built, 2026-10-26)
 
 ### Built

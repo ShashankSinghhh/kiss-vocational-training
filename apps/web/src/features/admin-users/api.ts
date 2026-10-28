@@ -73,11 +73,19 @@ export function useDeleteUser() {
   });
 }
 
+export function useUnlockUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<UserSummary>(`/admin/users/${id}/unlock`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
+  });
+}
+
 export function useResetPassword() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, password }: { id: string; password: string }) =>
-      api.post<UserSummary>(`/admin/users/${id}/password`, { password }),
+    mutationFn: ({ id, ...body }: { id: string; password: string; mustChangePassword: boolean }) =>
+      api.post<UserSummary>(`/admin/users/${id}/password`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
   });
 }

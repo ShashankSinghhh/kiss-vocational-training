@@ -58,6 +58,13 @@ function CoursesSection() {
   const [editing, setEditing] = useState<AdminCourse | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<AdminCourse | null>(null);
+  // D4: courses about to be deactivated that still have batches, students or open windows.
+  const [confirmingOff, setConfirmingOff] = useState<{
+    courses: AdminCourse[];
+    bulk: boolean;
+  } | null>(null);
+  const inUse = (c: AdminCourse) =>
+    c.inUse.batches > 0 || c.inUse.students > 0 || c.inUse.openWindows > 0;
   const [search, setSearch] = useState('');
   // Inactive courses are hidden by default so the list stays short; this device remembers it.
   const [status, setStatus] = usePersistentState<CourseStatusFilter>(
@@ -81,7 +88,10 @@ function CoursesSection() {
   const selectedIds = visibleIds.filter((id) => selected.has(id));
   const allSelected = rows.length > 0 && selectedIds.length === rows.length;
 
-  const toggle = async (c: AdminCourse) => {
+  const toggle = async (c: AdminCourse, confirmed = false) => {
+    if (c.isActive && !confirmed && inUse(c)) {
+      return setConfirmingOff({ courses: [c], bulk: false });
+    }
     try {
       await update.mutateAsync({ id: c.id, isActive: !c.isActive });
       toast.show({
@@ -95,7 +105,13 @@ function CoursesSection() {
     }
   };
 
-  const bulk = async (isActive: boolean) => {
+  const bulk = async (isActive: boolean, confirmed = false) => {
+    const affected = (data ?? []).filter(
+      (c) => selectedIds.includes(c.id) && c.isActive && inUse(c),
+    );
+    if (!isActive && !confirmed && affected.length > 0) {
+      return setConfirmingOff({ courses: affected, bulk: true });
+    }
     try {
       const { updated } = await setActive.mutateAsync({ ids: selectedIds, isActive });
       toast.show({
@@ -277,6 +293,46 @@ function CoursesSection() {
         )}
       </div>
       <CourseFormModal open={formOpen} course={editing} onClose={() => setFormOpen(false)} />
+      <Modal
+        open={!!confirmingOff}
+        onClose={() => setConfirmingOff(null)}
+        title={t('admin.confirmDeactivate.title', { count: confirmingOff?.courses.length ?? 0 })}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmingOff(null)}>
+              {t('common:actions.cancel')}
+            </Button>
+            <Button
+              variant="danger"
+              loading={update.isPending || setActive.isPending}
+              onClick={() => {
+                const pending = confirmingOff;
+                setConfirmingOff(null);
+                if (!pending) return;
+                if (pending.bulk) void bulk(false, true);
+                else void toggle(pending.courses[0]!, true);
+              }}
+            >
+              {t('admin.confirmDeactivate.confirm')}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-slate-700">{t('admin.confirmDeactivate.body')}</p>
+        <ul className="mt-3 flex flex-col gap-1 text-sm text-slate-800">
+          {(confirmingOff?.courses ?? []).map((c) => (
+            <li key={c.id}>
+              <span className="font-medium">{c.title}</span>
+              {': '}
+              {t('admin.confirmDeactivate.usage', {
+                batches: c.inUse.batches,
+                students: c.inUse.students,
+                windows: c.inUse.openWindows,
+              })}
+            </li>
+          ))}
+        </ul>
+      </Modal>
       <Modal
         open={!!deleting}
         onClose={() => setDeleting(null)}

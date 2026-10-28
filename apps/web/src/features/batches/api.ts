@@ -23,6 +23,8 @@ export function useMyBatches() {
 export function useBatch(batchId: string) {
   return useQuery({
     queryKey: ['batches', batchId],
+    // No request until a batch is chosen (the Completion page starts with none).
+    enabled: !!batchId,
     queryFn: ({ signal }) => api.get<BatchDetail>(`/batches/${batchId}`, { signal }),
   });
 }

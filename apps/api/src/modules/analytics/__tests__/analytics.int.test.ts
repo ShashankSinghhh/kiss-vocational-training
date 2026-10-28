@@ -4,6 +4,7 @@ import { createApp } from '../../../app';
 import { disconnectPrisma, prisma } from '../../../core/db';
 import { createLoginUser, createTrainedBatch } from '../../../../test/fixtures';
 import { bearer, login } from '../../../../test/http';
+import { issuedSince } from '../../documents/documents.service';
 
 const app = createApp();
 afterAll(() => disconnectPrisma());
@@ -38,6 +39,25 @@ const refresh = (A: Record<string, string>) =>
   request(app).post('/api/v1/analytics/refresh').set(A).expect(200);
 
 describe('outcome analytics (F20, BRQ-20.1–20.3)', () => {
+  it('counts certificates issued since the figures were built, for the stale notice (D7)', async () => {
+    const w = await world();
+    const before = new Date(Date.now() - 1000);
+    await prisma().certificate.create({
+      data: {
+        enrollmentId: w.students[0]!.enrollmentId,
+        publicCode: `D7${Date.now().toString(36).toUpperCase()}`.slice(0, 16).padEnd(16, '0'),
+        grade: 'A',
+        aggregatePercent: 90,
+        attendancePercent: 100,
+        issuedById: w.trainer.id,
+      },
+    });
+    expect(await issuedSince(before)).toBeGreaterThanOrEqual(1);
+    expect(await issuedSince(new Date(Date.now() + 60_000))).toBe(0);
+    const res = await request(app).get('/api/v1/analytics/outcomes').set(w.A).expect(200);
+    expect(res.body.certificatesSinceRefresh).toEqual(expect.any(Number));
+  });
+
   it('compares completion, score, attendance and placements for the batch and course', async () => {
     const w = await world();
     // A placement for the certified student.

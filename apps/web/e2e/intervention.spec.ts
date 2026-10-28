@@ -51,6 +51,7 @@ test.describe('Sprint 10: early intervention and the audit log', () => {
     await page.getByRole('button', { name: 'Add action' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Type').selectOption('EXTRA_SESSION');
+    await dialog.getByLabel('Owner').selectOption({ label: 'Sushant Mohanty (Trainer)' });
     await dialog.getByLabel('Note (staff only)').fill('Staff-only note about the student');
     await dialog.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Action recorded' })).toBeVisible();

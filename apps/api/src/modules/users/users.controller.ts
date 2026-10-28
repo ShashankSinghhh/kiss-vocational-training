@@ -50,7 +50,13 @@ export const remove = asyncHandler(async (req, res) => {
   res.status(204).end();
 });
 
+export const unlock = asyncHandler(async (req, res) => {
+  res.json(await usersService.unlockUser(actor(req), req.params.id!));
+});
+
 export const resetPassword = asyncHandler(async (req, res) => {
-  const { password } = req.body as AdminResetPasswordInput;
-  res.json(await usersService.resetPassword(actor(req), req.params.id!, password));
+  const { password, mustChangePassword } = req.body as AdminResetPasswordInput;
+  res.json(
+    await usersService.resetPassword(actor(req), req.params.id!, password, mustChangePassword),
+  );
 });

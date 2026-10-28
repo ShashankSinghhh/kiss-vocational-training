@@ -112,6 +112,26 @@ describe('dashboards (BRQ-9.1–9.3)', () => {
     expect(after.body.certificate).toMatchObject({ status: 'VALID', rendered: true });
   });
 
+  it('student: the headline stays on the training in progress after a later application (S4)', async () => {
+    const w = await createTrainedBatch(prisma(), [{ attended: 3, marks: 40, recommended: true }]);
+    const s = w.students[0]!;
+    // A pending application for a later, non-overlapping cycle, submitted afterwards.
+    const later = await prisma().trainingCycle.create({
+      data: {
+        name: `Later ${uid()}`,
+        startsOn: new Date('2028-01-03'),
+        endsOn: new Date('2028-04-28'),
+      },
+    });
+    await prisma().enrollment.create({
+      data: { studentId: s.studentId, cycleId: later.id, submittedAt: new Date(Date.now() + 1000) },
+    });
+    const res = await request(app)
+      .get('/api/v1/dashboard/student')
+      .set(await auth(s.user.email));
+    expect(res.body.enrollment).toMatchObject({ id: s.enrollmentId, status: 'ACTIVE' });
+  });
+
   it('each role reaches only its own dashboard (BRQ-1.2)', async () => {
     const db = prisma();
     const student = await createLoginUser(db, Role.STUDENT);

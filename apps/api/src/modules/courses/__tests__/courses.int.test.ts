@@ -2,7 +2,7 @@ import request from 'supertest';
 import { Role } from '@prisma/client';
 import { createApp } from '../../../app';
 import { disconnectPrisma, prisma } from '../../../core/db';
-import { createLoginUser, createOpenCycle, uid } from '../../../../test/fixtures';
+import { createBatch, createLoginUser, createOpenCycle, uid } from '../../../../test/fixtures';
 import { bearer, login } from '../../../../test/http';
 
 const app = createApp();
@@ -31,7 +31,7 @@ describe('admin courses, cycles and windows (BRQ-2.1, 2.3)', () => {
     const dup = await request(app)
       .post('/api/v1/admin/courses')
       .set(admin.auth)
-      .send({ ...created.body, id: undefined, isActive: undefined, code });
+      .send({ ...created.body, id: undefined, isActive: undefined, inUse: undefined, code });
     expect(dup.status).toBe(409);
     expect(dup.body.error.code).toBe('COURSE_CODE_TAKEN');
 
@@ -151,6 +151,20 @@ describe('admin course clean-up (BRQ-2.1)', () => {
     expect(on.body).toEqual({ updated: 2 });
   });
 
+  it('lists what deactivating each course would affect (D4)', async () => {
+    const admin = await auth(Role.ADMIN);
+    const { cycle, courses } = await createOpenCycle(prisma(), 1);
+    await createBatch(prisma(), cycle.id, courses[0]!.id, 5);
+    const res = await request(app).get('/api/v1/admin/courses').set(admin.auth);
+    const row = res.body.find((c: { id: string }) => c.id === courses[0]!.id);
+    expect(row.inUse).toEqual({ batches: 1, students: 0, openWindows: 1 });
+    const fresh = await newCourse(admin);
+    const unused = (await request(app).get('/api/v1/admin/courses').set(admin.auth)).body.find(
+      (c: { id: string }) => c.id === fresh,
+    );
+    expect(unused.inUse).toEqual({ batches: 0, students: 0, openWindows: 0 });
+  });
+
   it('rolls back the whole bulk change when one id is unknown', async () => {
     const admin = await auth(Role.ADMIN);
     const id = await newCourse(admin);
@@ -264,6 +278,18 @@ describe('catalogue (BRQ-2.2)', () => {
       .query({ cycleId: cycle.id })
       .set(student.auth);
     expect(after.body.course.seatsRemaining).toBe(9);
+  });
+
+  it('counts seats in the course batches once it has some (S2)', async () => {
+    const { cycle, courses } = await createOpenCycle(prisma(), 1);
+    const student = await auth(Role.STUDENT);
+    // The course plans 10 seats; the one batch made for it holds 4.
+    await createBatch(prisma(), cycle.id, courses[0]!.id, 4);
+    const res = await request(app)
+      .get('/api/v1/courses')
+      .query({ cycleId: cycle.id })
+      .set(student.auth);
+    expect(res.body.courses[0]).toMatchObject({ seatCapacity: 4, seatsRemaining: 4 });
   });
 
   it('requires sign-in', async () => {

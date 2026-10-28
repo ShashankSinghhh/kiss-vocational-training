@@ -159,7 +159,7 @@ describe('POST /scheduling/check (F14)', () => {
     expect(a.trainers.map((t: { id: string }) => t.id)).toEqual([w.trainer.trainer!.id]);
   });
 
-  it('a session overlapping the assigned trainer elsewhere is a soft warning, not a block', async () => {
+  it("the batch's only trainer busy elsewhere blocks (T3); one of two assigned only warns", async () => {
     const w = await world();
     const db = prisma();
     await db.trainerAssignment.create({
@@ -173,27 +173,40 @@ describe('POST /scheduling/check (F14)', () => {
         venue: w.a.venue,
       },
     });
-    const res = await request(app)
-      .post('/api/v1/scheduling/check')
-      .set(w.A)
-      .send({
-        batches: [
-          {
-            batchId: w.b.id,
-            sessions: [{ startsAt: '2027-01-12T05:00:00Z', endsAt: '2027-01-12T07:00:00Z' }],
-          },
-        ],
-      })
-      .expect(200);
-    expect(res.body.batches[0].clashes).toEqual([
+    const check = () =>
+      request(app)
+        .post('/api/v1/scheduling/check')
+        .set(w.A)
+        .send({
+          batches: [
+            {
+              batchId: w.b.id,
+              sessions: [{ startsAt: '2027-01-12T05:00:00Z', endsAt: '2027-01-12T07:00:00Z' }],
+            },
+          ],
+        })
+        .expect(200);
+    const save = () =>
+      request(app)
+        .post(`/api/v1/admin/batches/${w.b.id}/sessions`)
+        .set(w.A)
+        .send(single('2027-01-12T05:00:00Z', '2027-01-12T07:00:00Z'));
+
+    // Same sole trainer on both batches: they would teach two sessions at once.
+    expect((await check()).body.batches[0].clashes).toEqual([
+      expect.objectContaining({ kind: 'TRAINER', hard: true }),
+    ]);
+    const refused = await save();
+    expect(refused.status).toBe(409);
+    expect(refused.body.error.code).toBe('SCHEDULE_CLASH');
+
+    // With a second trainer on batch B either could teach it: a warning, and saving works.
+    const second = await createLoginUser(db, Role.TRAINER);
+    await db.trainerAssignment.create({ data: { batchId: w.b.id, trainerId: second.trainer!.id } });
+    expect((await check()).body.batches[0].clashes).toEqual([
       expect.objectContaining({ kind: 'TRAINER', hard: false }),
     ]);
-    // Saving it is allowed: only hard clashes block.
-    await request(app)
-      .post(`/api/v1/admin/batches/${w.b.id}/sessions`)
-      .set(w.A)
-      .send(single('2027-01-12T05:00:00Z', '2027-01-12T07:00:00Z'))
-      .expect(201);
+    expect((await save()).status).toBe(201);
   });
 
   it('is for admins only, and validates input', async () => {

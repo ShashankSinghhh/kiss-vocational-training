@@ -2,7 +2,13 @@ import request from 'supertest';
 import { Role } from '@prisma/client';
 import { createApp } from '../../../app';
 import { disconnectPrisma, prisma } from '../../../core/db';
-import { createLoginUser, createOpenCycle, TEST_PASSWORD, uid } from '../../../../test/fixtures';
+import {
+  createBatch,
+  createLoginUser,
+  createOpenCycle,
+  TEST_PASSWORD,
+  uid,
+} from '../../../../test/fixtures';
 import { bearer, cookie, login } from '../../../../test/http';
 
 // Fresh app per test: each has its own in-memory rate-limit store.
@@ -358,6 +364,129 @@ describe('admin password reset', () => {
   });
 });
 
+describe('password set by an admin must be changed (A3) and unlocking (A2)', () => {
+  it('a new account asked to change its password can do nothing else until it does', async () => {
+    const admin = await signedIn(Role.ADMIN);
+    const email = `first-${uid()}@test.local`;
+    const created = await request(app)
+      .post('/api/v1/admin/users')
+      .set(bearer(admin.accessToken))
+      .send({
+        role: 'STUDENT',
+        email,
+        fullName: 'First Timer',
+        password: 'Office-Gave-1',
+        rollNo: `F-${uid()}`,
+        cgpa: 7,
+        mustChangePassword: true,
+      });
+    expect(created.status).toBe(201);
+    const session = await login(app, email, 'Office-Gave-1');
+    const auth = bearer(session.accessToken);
+
+    const me = await request(app).get('/api/v1/auth/me').set(auth);
+    expect(me.body.mustChangePassword).toBe(true);
+    expect((await request(app).get('/api/v1/notifications/me').set(auth)).status).toBe(200);
+    const blocked = await request(app).get('/api/v1/dashboard/student').set(auth);
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.error.code).toBe('PASSWORD_CHANGE_REQUIRED');
+
+    const changed = await request(app)
+      .post('/api/v1/users/me/password')
+      .set(auth)
+      .send({ currentPassword: 'Office-Gave-1', newPassword: 'My-Own-Pass-2' });
+    expect(changed.status).toBe(204);
+    expect((await request(app).get('/api/v1/auth/me').set(auth)).body.mustChangePassword).toBe(
+      false,
+    );
+    expect((await request(app).get('/api/v1/dashboard/student').set(auth)).status).toBe(200);
+  });
+
+  it('a reset asks for a new password by default, unless the admin says not to', async () => {
+    const admin = await signedIn(Role.ADMIN);
+    const a = await createLoginUser(prisma(), Role.STUDENT);
+    const b = await createLoginUser(prisma(), Role.STUDENT);
+    await request(app)
+      .post(`/api/v1/admin/users/${a.id}/password`)
+      .set(bearer(admin.accessToken))
+      .send({ password: 'Fresh-Start-9' })
+      .expect(200);
+    await request(app)
+      .post(`/api/v1/admin/users/${b.id}/password`)
+      .set(bearer(admin.accessToken))
+      .send({ password: 'Fresh-Start-9', mustChangePassword: false })
+      .expect(200);
+    const flags = await prisma().user.findMany({
+      where: { id: { in: [a.id, b.id] } },
+      select: { id: true, mustChangePassword: true },
+    });
+    expect(flags.find((u) => u.id === a.id)!.mustChangePassword).toBe(true);
+    expect(flags.find((u) => u.id === b.id)!.mustChangePassword).toBe(false);
+  });
+
+  it('unlocks a locked account at once and audits it', async () => {
+    const admin = await signedIn(Role.ADMIN);
+    const target = await createLoginUser(prisma(), Role.TRAINER);
+    await prisma().user.update({
+      where: { id: target.id },
+      data: { failedLoginCount: 5, lockedUntil: new Date(Date.now() + 15 * 60_000) },
+    });
+    const locked = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: target.email, password: TEST_PASSWORD });
+    expect(locked.status).toBe(401);
+
+    const res = await request(app)
+      .post(`/api/v1/admin/users/${target.id}/unlock`)
+      .set(bearer(admin.accessToken));
+    expect(res.status).toBe(200);
+    expect(res.body.lockedUntil).toBeNull();
+    const ok = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: target.email, password: TEST_PASSWORD });
+    expect(ok.status).toBe(200);
+    expect(
+      await prisma().auditLog.count({ where: { action: 'USER_UNLOCKED', entityId: target.id } }),
+    ).toBe(1);
+  });
+});
+
+describe('deactivating a trainer a batch still needs (D3)', () => {
+  it('refuses while they are the only trainer of a planned batch, allows once another is assigned', async () => {
+    const admin = await signedIn(Role.ADMIN);
+    const only = await createLoginUser(prisma(), Role.TRAINER);
+    const other = await createLoginUser(prisma(), Role.TRAINER);
+    const { cycle, courses } = await createOpenCycle(prisma(), 1);
+    const batch = await createBatch(prisma(), cycle.id, courses[0]!.id, 10);
+    await prisma().trainerAssignment.create({
+      data: { batchId: batch.id, trainerId: only.trainer!.id },
+    });
+
+    const single = await request(app)
+      .patch(`/api/v1/admin/users/${only.id}`)
+      .set(bearer(admin.accessToken))
+      .send({ isActive: false });
+    expect(single.status).toBe(409);
+    expect(single.body.error.code).toBe('TRAINER_STILL_NEEDED');
+    expect(single.body.error.details[0].message).toContain(batch.name);
+    const bulk = await request(app)
+      .post('/api/v1/admin/users/bulk-status')
+      .set(bearer(admin.accessToken))
+      .send({ ids: [only.id], isActive: false });
+    expect(bulk.status).toBe(409);
+    expect((await prisma().user.findUniqueOrThrow({ where: { id: only.id } })).isActive).toBe(true);
+
+    await prisma().trainerAssignment.create({
+      data: { batchId: batch.id, trainerId: other.trainer!.id },
+    });
+    const ok = await request(app)
+      .patch(`/api/v1/admin/users/${only.id}`)
+      .set(bearer(admin.accessToken))
+      .send({ isActive: false });
+    expect(ok.status).toBe(200);
+  });
+});
+
 describe('PATCH /users/me (BRQ-1.3)', () => {
   it('updates name, locale and phone', async () => {
     const { accessToken, user } = await signedIn(Role.STUDENT);
@@ -405,6 +534,22 @@ describe('POST /users/me/password', () => {
       .set(bearer(accessToken))
       .send({ currentPassword: TEST_PASSWORD, newPassword: 'short' });
     expect(res.status).toBe(422);
+  });
+
+  it('rejects passwords without both a letter and a digit (A4)', async () => {
+    const { accessToken } = await signedIn(Role.STUDENT);
+    for (const newPassword of ['aaaaaaaa', '12345678', '!!!!!!!!']) {
+      const res = await request(app)
+        .post('/api/v1/users/me/password')
+        .set(bearer(accessToken))
+        .send({ currentPassword: TEST_PASSWORD, newPassword });
+      expect(res.status).toBe(422);
+    }
+    const ok = await request(app)
+      .post('/api/v1/users/me/password')
+      .set(bearer(accessToken))
+      .send({ currentPassword: TEST_PASSWORD, newPassword: 'ପାସୱାର୍ଡ2026' });
+    expect(ok.status).toBe(204);
   });
 
   it('changes the password and signs out other sessions only', async () => {

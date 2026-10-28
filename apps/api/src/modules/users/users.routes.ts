@@ -46,6 +46,7 @@ export function adminUserRoutes(): Router {
     controller.update,
   );
   router.delete('/:id', validate({ params: IdParams }), controller.remove);
+  router.post('/:id/unlock', validate({ params: IdParams }), controller.unlock);
   router.post(
     '/:id/password',
     validate({ params: IdParams, body: AdminResetPasswordSchema }),

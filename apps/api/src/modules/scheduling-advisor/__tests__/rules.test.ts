@@ -47,7 +47,7 @@ describe('clashesFor (BRQ-14.2)', () => {
     expect(clashesFor(slot('10:00', '12:00'), [slot('12:00', '13:00')])).toEqual([]);
   });
 
-  it('a trainer named on both sessions is a hard clash; through batch assignment it is soft', () => {
+  it('the same trainer certainly teaching both is a hard clash; one of several assigned is soft', () => {
     const mine = slot('10:00', '12:00', {
       venue: 'Lab 1',
       explicitTrainerId: T1,
@@ -58,11 +58,16 @@ describe('clashesFor (BRQ-14.2)', () => {
       explicitTrainerId: T1,
       trainerIds: [T1],
     });
-    const assigned = slot('11:00', '12:30', { venue: 'Lab 3', trainerIds: [T1] });
+    // T3: the batch's only trainer teaches every session that names nobody.
+    const soleTrainer = slot('11:00', '12:30', { venue: 'Lab 3', trainerIds: [T1] });
+    const oneOfTwo = slot('11:00', '12:30', { venue: 'Lab 4', trainerIds: [T1, 'trainer-2'] });
     expect(clashesFor(mine, [named])).toEqual([
       expect.objectContaining({ kind: 'TRAINER', hard: true, trainerId: T1 }),
     ]);
-    expect(clashesFor(mine, [assigned])).toEqual([
+    expect(clashesFor(mine, [soleTrainer])).toEqual([
+      expect.objectContaining({ kind: 'TRAINER', hard: true, trainerId: T1 }),
+    ]);
+    expect(clashesFor(mine, [oneOfTwo])).toEqual([
       expect.objectContaining({ kind: 'TRAINER', hard: false, trainerId: T1 }),
     ]);
   });

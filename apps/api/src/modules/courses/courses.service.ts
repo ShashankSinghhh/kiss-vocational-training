@@ -15,7 +15,7 @@ import type {
 import { withAudit, type Actor } from '../../core/audit';
 import { prisma } from '../../core/db';
 import { AppError } from '../../core/errors';
-import { windowState } from './rules';
+import { isWindowOpen, windowState } from './rules';
 
 type OfferingRow = Prisma.CourseOfferingGetPayload<object>;
 type CourseRow = Prisma.CourseGetPayload<object>;
@@ -38,7 +38,10 @@ export function toOffering(o: OfferingRow, now = new Date()): Offering {
   };
 }
 
-function toAdminCourse(c: CourseRow): AdminCourse {
+type CourseUsage = AdminCourse['inUse'];
+const NOT_USED: CourseUsage = { batches: 0, students: 0, openWindows: 0 };
+
+function toAdminCourse(c: CourseRow, inUse: CourseUsage = NOT_USED): AdminCourse {
   return {
     id: c.id,
     code: c.code,
@@ -46,8 +49,10 @@ function toAdminCourse(c: CourseRow): AdminCourse {
     description: c.description,
     durationWeeks: c.durationWeeks,
     prerequisites: c.prerequisites,
+    prerequisitesNeedReview: c.prerequisitesNeedReview,
     seatCapacity: c.seatCapacity,
     isActive: c.isActive,
+    inUse,
   };
 }
 
@@ -121,12 +126,15 @@ async function defaultCycleId(): Promise<string | null> {
 // ─── Catalogue (BRQ-2.2) ──────────────────────────────────────────────────────
 
 /**
- * Active courses offered in a cycle. Seats taken come from the caller (enrollments service),
- * so this module never reads another module's tables.
+ * Active courses offered in a cycle. Seats taken and batch capacity come from the caller
+ * (enrollments and batches services), so this module never reads another module's tables.
+ * Once a course has batches in the cycle, its seats are the places in those batches (S2):
+ * the course's own capacity is only a plan until batches exist.
  */
 export async function catalogue(
   cycleId: string | undefined,
   seatsTaken: (cycleId: string) => Promise<Map<string, number>>,
+  batchCapacity: (cycleId: string) => Promise<Map<string, number>> = async () => new Map(),
 ): Promise<{ cycle: Cycle | null; courses: CatalogueCourse[] }> {
   const id = cycleId ?? (await defaultCycleId());
   if (!id) return { cycle: null, courses: [] };
@@ -140,29 +148,53 @@ export async function catalogue(
     }),
     seatsTaken(id),
   ]);
+  const inBatches = await batchCapacity(id);
   return {
     cycle,
-    courses: courses.map((c) => ({
-      id: c.id,
-      code: c.code,
-      title: c.title,
-      description: c.description,
-      durationWeeks: c.durationWeeks,
-      prerequisites: c.prerequisites,
-      seatCapacity: c.seatCapacity,
-      seatsRemaining: Math.max(0, c.seatCapacity - (taken.get(c.id) ?? 0)),
-      offering: c.offerings[0] ? toOffering(c.offerings[0], now) : null,
-    })),
+    courses: courses.map((c) => {
+      const capacity = inBatches.get(c.id) ?? c.seatCapacity;
+      return {
+        id: c.id,
+        code: c.code,
+        title: c.title,
+        description: c.description,
+        durationWeeks: c.durationWeeks,
+        prerequisites: c.prerequisites,
+        seatCapacity: capacity,
+        seatsRemaining: Math.max(0, capacity - (taken.get(c.id) ?? 0)),
+        offering: c.offerings[0] ? toOffering(c.offerings[0], now) : null,
+      };
+    }),
   };
 }
 
 // ─── Admin: courses (BRQ-2.1) ─────────────────────────────────────────────────
 
-export async function listCourses(): Promise<AdminCourse[]> {
-  const rows = await prisma().course.findMany({
-    orderBy: [{ isActive: 'desc' }, { title: 'asc' }],
-  });
-  return rows.map(toAdminCourse);
+/**
+ * Every course with what deactivating it would affect (D4). Live batches come from the caller
+ * (batches service), so this module never reads another module's tables.
+ */
+export async function listCourses(
+  liveBatches: () => Promise<Map<string, { batches: number; students: number }>> = async () =>
+    new Map(),
+): Promise<AdminCourse[]> {
+  const now = new Date();
+  const [rows, batches] = await Promise.all([
+    prisma().course.findMany({
+      orderBy: [{ isActive: 'desc' }, { title: 'asc' }],
+      include: {
+        offerings: { select: { isOpen: true, enrollmentOpensAt: true, enrollmentClosesAt: true } },
+      },
+    }),
+    liveBatches(),
+  ]);
+  return rows.map(({ offerings, ...c }) =>
+    toAdminCourse(c, {
+      batches: batches.get(c.id)?.batches ?? 0,
+      students: batches.get(c.id)?.students ?? 0,
+      openWindows: offerings.filter((o) => isWindowOpen(o, now)).length,
+    }),
+  );
 }
 
 export async function createCourse(actor: Actor, input: CourseCreateInput): Promise<AdminCourse> {

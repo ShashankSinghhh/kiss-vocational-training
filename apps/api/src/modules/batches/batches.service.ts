@@ -276,6 +276,32 @@ export async function membersByCourse(cycleId: string): Promise<Map<string, numb
   return new Map(rows.map((r) => [r.course_id, Number(r.n)]));
 }
 
+/** D4: per course, planned or running batches and the students placed in them. */
+export async function liveBatchesByCourse(): Promise<
+  Map<string, { batches: number; students: number }>
+> {
+  const rows = await prisma().batch.findMany({
+    where: { status: { in: ['PLANNED', 'ACTIVE'] } },
+    select: { courseId: true, _count: { select: { students: true } } },
+  });
+  const out = new Map<string, { batches: number; students: number }>();
+  for (const r of rows) {
+    const c = out.get(r.courseId) ?? { batches: 0, students: 0 };
+    out.set(r.courseId, { batches: c.batches + 1, students: c.students + r._count.students });
+  }
+  return out;
+}
+
+/** S2: total capacity of each course's batches in a cycle (closed batches don't take anyone). */
+export async function capacityByCourse(cycleId: string): Promise<Map<string, number>> {
+  const rows = await prisma().batch.groupBy({
+    by: ['courseId'],
+    where: { cycleId, status: { not: 'CLOSED' } },
+    _sum: { capacity: true },
+  });
+  return new Map(rows.map((r) => [r.courseId, r._sum.capacity ?? 0]));
+}
+
 // ─── Admin: batches (BRQ-4.1) ──────────────────────────────────────────────────
 
 export async function create(actor: Actor, input: BatchCreateInput): Promise<BatchSummary> {
@@ -790,6 +816,15 @@ export async function createSessions(
   }
 
   const venue = input.venue ?? batch.venue;
+  // Who teaches the new sessions: the named trainer, else everyone assigned to the batch (T3).
+  const teachers = input.trainerId
+    ? [input.trainerId]
+    : (
+        await prisma().trainerAssignment.findMany({
+          where: { batchId },
+          select: { trainerId: true },
+        })
+      ).map((a) => a.trainerId);
   return withAudit(actor, async (tx, log) => {
     // BR-20: serialise scheduling so two admins can't book the same slot at once, then refuse
     // hard clashes (same venue, or the same trainer named on both sessions).
@@ -800,14 +835,11 @@ export async function createSessions(
     };
     const booked = await bookingsOverlapping(tx, window, {
       venues: [venue],
-      trainerIds: input.trainerId ? [input.trainerId] : [],
+      trainerIds: teachers,
     });
     const explicit = input.trainerId ?? null;
     const hard = slots.flatMap((slot, i) =>
-      clashesFor(
-        { ...slot, venue, explicitTrainerId: explicit, trainerIds: explicit ? [explicit] : [] },
-        booked,
-      )
+      clashesFor({ ...slot, venue, explicitTrainerId: explicit, trainerIds: teachers }, booked)
         .filter((c) => c.hard)
         .map((c) => ({ i, c })),
     );
@@ -947,4 +979,37 @@ export async function statusCounts(): Promise<Record<BatchStatus, number>> {
   const counts: Record<BatchStatus, number> = { PLANNED: 0, ACTIVE: 0, CLOSED: 0 };
   for (const r of rows) counts[r.status] = r._count._all;
   return counts;
+}
+
+/**
+ * D3: planned or running batches whose ONLY trainer is one of these users. Deactivating such a
+ * trainer would leave the batch with nobody able to mark attendance or record marks.
+ */
+export async function batchesOnlyTaughtBy(
+  userIds: string[],
+): Promise<Array<{ userId: string; trainerName: string; batch: string }>> {
+  if (userIds.length === 0) return [];
+  const rows = await prisma().trainerAssignment.findMany({
+    where: {
+      trainer: { userId: { in: userIds } },
+      batch: { status: { in: ['PLANNED', 'ACTIVE'] } },
+    },
+    select: {
+      trainer: { select: { userId: true, user: { select: { fullName: true } } } },
+      batch: {
+        select: {
+          name: true,
+          course: { select: { title: true } },
+          _count: { select: { trainers: true } },
+        },
+      },
+    },
+  });
+  return rows
+    .filter((r) => r.batch._count.trainers === 1)
+    .map((r) => ({
+      userId: r.trainer.userId,
+      trainerName: r.trainer.user.fullName,
+      batch: `${r.batch.course.title} · ${r.batch.name}`,
+    }));
 }

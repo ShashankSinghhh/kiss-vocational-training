@@ -17,6 +17,18 @@ import { prisma } from '../../core/db';
 import { AppError } from '../../core/errors';
 import { paginated, parsePagination } from '../../core/http';
 import { getMe, revokeUserSessions } from '../auth/auth.service';
+import { batchesOnlyTaughtBy } from '../batches/batches.service';
+
+/** D3: refuse to deactivate the only trainer of a planned or running batch. */
+async function assertNoBatchLeftWithoutTrainer(userIds: string[]): Promise<void> {
+  const stranded = await batchesOnlyTaughtBy(userIds);
+  if (stranded.length === 0) return;
+  throw AppError.conflict(
+    'TRAINER_STILL_NEEDED',
+    `Assign another trainer first: ${stranded.map((s) => `${s.trainerName} is the only trainer of ${s.batch}`).join('; ')}`,
+    stranded.map((s) => ({ path: s.trainerName, message: s.batch })),
+  );
+}
 
 // ─── Self-service (BRQ-1.3) ──────────────────────────────────────────────────
 
@@ -88,7 +100,10 @@ export async function changePassword(
   }
   const passwordHash = await hashPassword(input.newPassword);
   await withAudit(actor, async (tx, log) => {
-    await tx.user.update({ where: { id: actor.userId }, data: { passwordHash } });
+    await tx.user.update({
+      where: { id: actor.userId },
+      data: { passwordHash, mustChangePassword: false },
+    });
     // Sign out every other device; keep the session that made the change.
     await revokeUserSessions(tx, actor.userId, currentRefreshToken);
     // Never put password material in the audit log.
@@ -183,6 +198,7 @@ export async function createUser(actor: Actor, input: AdminCreateUserInput): Pro
           role: input.role,
           locale: input.locale,
           passwordHash,
+          mustChangePassword: input.mustChangePassword ?? false,
           ...(input.role === 'STUDENT'
             ? {
                 student: {
@@ -225,6 +241,7 @@ export async function updateUser(
   if (userId === actor.userId && input.isActive === false) {
     throw AppError.conflict('CANNOT_DEACTIVATE_SELF', 'You cannot deactivate your own account');
   }
+  if (input.isActive === false) await assertNoBatchLeftWithoutTrainer([userId]);
   return withAudit(actor, async (tx, log) => {
     const before = await tx.user.findUnique({ where: { id: userId }, select: summarySelect });
     if (!before) throw AppError.notFound('User not found');
@@ -265,6 +282,7 @@ export async function resetPassword(
   actor: Actor & { userId: string },
   userId: string,
   password: string,
+  mustChangePassword = true,
 ): Promise<UserSummary> {
   if (userId === actor.userId) {
     throw AppError.conflict(
@@ -278,12 +296,43 @@ export async function resetPassword(
     if (!before) throw AppError.notFound('User not found');
     const user = await tx.user.update({
       where: { id: userId },
-      data: { passwordHash, failedLoginCount: 0, lockedUntil: null },
+      data: { passwordHash, mustChangePassword, failedLoginCount: 0, lockedUntil: null },
       select: summarySelect,
     });
     await revokeUserSessions(tx, userId);
     // Never the password itself (CLAUDE.md rule 10).
-    await log({ action: 'USER_PASSWORD_RESET', entity: 'User', entityId: userId });
+    await log({
+      action: 'USER_PASSWORD_RESET',
+      entity: 'User',
+      entityId: userId,
+      newValue: { mustChangePassword },
+    });
+    return toSummary(user);
+  });
+}
+
+/** Clears a login lock (too many wrong passwords) so the user can try again at once (A2). */
+export async function unlockUser(actor: Actor, userId: string): Promise<UserSummary> {
+  return withAudit(actor, async (tx, log) => {
+    const before = await tx.user.findUnique({
+      where: { id: userId },
+      select: { lockedUntil: true, failedLoginCount: true },
+    });
+    if (!before) throw AppError.notFound('User not found');
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: { failedLoginCount: 0, lockedUntil: null },
+      select: summarySelect,
+    });
+    await log({
+      action: 'USER_UNLOCKED',
+      entity: 'User',
+      entityId: userId,
+      oldValue: {
+        lockedUntil: before.lockedUntil?.toISOString() ?? null,
+        failedLoginCount: before.failedLoginCount,
+      },
+    });
     return toSummary(user);
   });
 }
@@ -299,6 +348,7 @@ export async function setUsersActive(
   if (!input.isActive && input.ids.includes(actor.userId)) {
     throw AppError.conflict('CANNOT_DEACTIVATE_SELF', 'You cannot deactivate your own account');
   }
+  if (!input.isActive) await assertNoBatchLeftWithoutTrainer(input.ids);
   return withAudit(actor, async (tx, log) => {
     const before = await tx.user.findMany({
       where: { id: { in: input.ids } },
@@ -415,16 +465,29 @@ export async function studentProfile(
 /** Names and roll numbers for a set of students (lists in other modules). */
 export async function studentSummaries(
   ids: string[],
-): Promise<Map<string, { id: string; fullName: string; rollNo: string; userId: string }>> {
+): Promise<
+  Map<string, { id: string; fullName: string; rollNo: string; userId: string; isActive: boolean }>
+> {
   if (ids.length === 0) return new Map();
   const rows = await prisma().student.findMany({
     where: { id: { in: [...new Set(ids)] } },
-    select: { id: true, rollNo: true, userId: true, user: { select: { fullName: true } } },
+    select: {
+      id: true,
+      rollNo: true,
+      userId: true,
+      user: { select: { fullName: true, isActive: true } },
+    },
   });
   return new Map(
     rows.map((s) => [
       s.id,
-      { id: s.id, fullName: s.user.fullName, rollNo: s.rollNo, userId: s.userId },
+      {
+        id: s.id,
+        fullName: s.user.fullName,
+        rollNo: s.rollNo,
+        userId: s.userId,
+        isActive: s.user.isActive,
+      },
     ]),
   );
 }

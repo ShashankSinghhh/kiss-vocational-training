@@ -25,9 +25,9 @@
     "badgeDown": "ଅଫଲାଇନ୍"
   },
   "tiles": {
-    "students": "ସକ୍ରିୟ ଛାତ୍ରଛାତ୍ରୀ",
+    "students": "ଛାତ୍ରଛାତ୍ରୀ ଆକାଉଣ୍ଟ",
     "courses": "ସକ୍ରିୟ ପାଠ୍ୟକ୍ରମ",
-    "trainers": "ସକ୍ରିୟ ପ୍ରଶିକ୍ଷକ",
+    "trainers": "ପ୍ରଶିକ୍ଷକ ଆକାଉଣ୍ଟ",
     "activeBatches": "ପ୍ରଶିକ୍ଷଣରେ ଥିବା ବ୍ୟାଚ୍",
     "plannedBatches": "{{count}} ଯୋଜନାବଦ୍ଧ · {{closed}} ବନ୍ଦ",
     "completionRate": "ସମାପ୍ତି ହାର",

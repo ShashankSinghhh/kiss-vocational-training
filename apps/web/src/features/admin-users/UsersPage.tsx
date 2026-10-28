@@ -17,7 +17,14 @@ import { useErrorMessage } from '../../lib/api/useErrorMessage';
 import { useAuth } from '../../lib/auth';
 import { usePersistentState } from '../../lib/usePersistentState';
 import { useSelection } from '../../lib/useSelection';
-import { useDeleteUser, useSetUsersActive, useUpdateUser, useUsers, type UserFilters } from './api';
+import {
+  useDeleteUser,
+  useSetUsersActive,
+  useUnlockUser,
+  useUpdateUser,
+  useUsers,
+  type UserFilters,
+} from './api';
 import { CreateUserModal } from './CreateUserModal';
 import { ResetPasswordModal } from './ResetPasswordModal';
 
@@ -60,6 +67,17 @@ export function UsersPage() {
   const update = useUpdateUser();
   const setMany = useSetUsersActive();
   const remove = useDeleteUser();
+  const unlock = useUnlockUser();
+  const isLocked = (u: UserSummary) => !!u.lockedUntil && new Date(u.lockedUntil) > new Date();
+
+  const doUnlock = async (target: UserSummary) => {
+    try {
+      await unlock.mutateAsync(target.id);
+      toast.show({ tone: 'success', title: t('unlocked', { name: target.fullName }) });
+    } catch (err) {
+      toast.show({ tone: 'error', title: errorMessage(err) });
+    }
+  };
   const { selected, toggle, toggleAll, clear } = useSelection();
 
   const q = useDebounced(search, 300);
@@ -180,6 +198,16 @@ export function UsersPage() {
                 aria-label={`${t('reactivate')}: ${u.fullName}`}
               >
                 {t('reactivate')}
+              </Button>
+            )}
+            {u.isActive && isLocked(u) && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void doUnlock(u)}
+                aria-label={`${t('unlock')}: ${u.fullName}`}
+              >
+                {t('unlock')}
               </Button>
             )}
             <Button

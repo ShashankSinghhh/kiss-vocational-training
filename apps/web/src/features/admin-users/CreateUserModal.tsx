@@ -25,6 +25,7 @@ interface FormValues {
   employeeCode: string;
   specialization: string;
   phone: string;
+  mustChangePassword: boolean;
 }
 
 const EMPTY: FormValues = {
@@ -38,6 +39,7 @@ const EMPTY: FormValues = {
   employeeCode: '',
   specialization: '',
   phone: '',
+  mustChangePassword: true,
 };
 
 /** Keeps only the fields for the chosen role and drops blank optionals before validating. */
@@ -48,6 +50,7 @@ function toPayload(v: FormValues): Record<string, unknown> {
     email: v.email,
     password: v.password,
     locale: v.locale,
+    mustChangePassword: v.mustChangePassword,
   };
   const optional = (s: string) => (s.trim() ? s : undefined);
   if (v.role === 'STUDENT') {
@@ -178,6 +181,14 @@ export function CreateUserModal({ open, onClose }: { open: boolean; onClose: () 
             error={fieldError('password')}
             {...register('password')}
           />
+          <label className="mt-2 flex items-center gap-2 text-sm text-slate-800">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-400 text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-600"
+              {...register('mustChangePassword')}
+            />
+            {t('form.mustChangePassword')}
+          </label>
         </div>
         {role === 'STUDENT' && (
           <>

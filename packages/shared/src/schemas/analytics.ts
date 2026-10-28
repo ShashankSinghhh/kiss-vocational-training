@@ -39,6 +39,8 @@ export interface BatchOutcome extends OutcomeFigures {
 export interface OutcomeAnalytics {
   /** When the views were last refreshed (nightly); null if never. */
   refreshedAt: string | null;
+  /** D7: certificates issued since the views were refreshed (not in these figures yet). */
+  certificatesSinceRefresh: number;
   totals: OutcomeFigures;
   courses: CourseOutcome[];
   batches: BatchOutcome[];

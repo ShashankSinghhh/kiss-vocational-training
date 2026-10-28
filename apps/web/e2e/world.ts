@@ -8,8 +8,45 @@ export async function token(request: APIRequestContext, email: string, password:
 }
 
 /**
+ * Assigns a freshly created co-trainer to a batch. Test batches share the seeded trainer, and
+ * many of them have sessions at the same times; with a second trainer either may teach, so
+ * those are scheduling warnings, not hard clashes (T3).
+ */
+export async function addCoTrainer(request: APIRequestContext, batchId: string) {
+  const admin = await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD);
+  const headers = { Authorization: admin };
+  const s = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const fullName = `Co-trainer ${s}`;
+  const created = await request.post('/api/v1/admin/users', {
+    headers,
+    data: {
+      role: 'TRAINER',
+      email: `e2e-cotrainer-${s}@kiss-vtmp.test`,
+      fullName,
+      password: 'E2e-Cotrain-Pass1',
+      employeeCode: `CT-${s}`.slice(0, 40),
+    },
+  });
+  expect(created.ok(), await created.text()).toBeTruthy();
+  const trainers = (await (
+    await request.get('/api/v1/admin/trainers', { headers })
+  ).json()) as Array<{
+    id: string;
+    fullName: string;
+  }>;
+  const trainerId = trainers.find((t) => t.fullName === fullName)!.id;
+  const assigned = await request.post(`/api/v1/admin/batches/${batchId}/trainers`, {
+    headers,
+    data: { trainerId },
+  });
+  expect(assigned.ok(), await assigned.text()).toBeTruthy();
+}
+
+/**
  * Builds an isolated ACTIVE batch through the API: started a few days ago, two placed
- * students, the seeded trainer assigned, and one session that began an hour ago.
+ * students, the seeded trainer assigned, and one session that began an hour ago. Every test
+ * batch has a session around now, so each also gets a co-trainer of its own: with two trainers
+ * either may teach, and the seeded trainer's many test sessions are not a hard clash (T3).
  */
 export async function setupActiveBatch(request: APIRequestContext) {
   const admin = await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD);
@@ -106,6 +143,7 @@ export async function setupActiveBatch(request: APIRequestContext) {
       data: { trainerId: trainer.id },
     }),
   );
+  await addCoTrainer(request, batch.id);
   await ok(
     request.post(`/api/v1/admin/batches/${batch.id}/sessions`, {
       ...h,

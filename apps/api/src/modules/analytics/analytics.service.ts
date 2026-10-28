@@ -16,6 +16,7 @@ import { paginated } from '../../core/http';
 import { withJobLease } from '../../core/jobs';
 import { settings } from '../../core/settings';
 import * as batches from '../batches/batches.service';
+import * as documents from '../documents/documents.service';
 import * as enrollments from '../enrollments/enrollments.service';
 import * as opportunities from '../opportunities/opportunities.service';
 import { toCsv } from '../reports/csv';
@@ -172,7 +173,14 @@ export async function outcomes(cycleId?: string): Promise<OutcomeAnalytics> {
   batchOutcomes.sort(
     (x, y) => x.courseTitle.localeCompare(y.courseTitle) || x.batchName.localeCompare(y.batchName),
   );
-  return { refreshedAt: at, totals: figures(total, late), courses, batches: batchOutcomes };
+  const certificatesSinceRefresh = await documents.issuedSince(at ? new Date(at) : null);
+  return {
+    refreshedAt: at,
+    certificatesSinceRefresh,
+    totals: figures(total, late),
+    courses,
+    batches: batchOutcomes,
+  };
 }
 
 const pct = (v: number | null) => (v === null ? null : v);

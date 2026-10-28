@@ -25,9 +25,9 @@
     "badgeDown": "Offline"
   },
   "tiles": {
-    "students": "Active students",
+    "students": "Student accounts",
     "courses": "Active courses",
-    "trainers": "Active trainers",
+    "trainers": "Trainer accounts",
     "activeBatches": "Batches in training",
     "plannedBatches": "{{count}} planned · {{closed}} closed",
     "completionRate": "Completion rate",

@@ -143,8 +143,10 @@ export async function evaluateBatch(
     users.activeAdmins(),
   ]);
   // Only students still in training are evaluated (BR-16); finished ones keep no open flag.
-  const facts = new Map([...allFacts].filter(([id]) => inTraining(statuses.get(id))));
-  const students = await users.studentSummaries([...facts.keys()]);
+  const inBatch = new Map([...allFacts].filter(([id]) => inTraining(statuses.get(id))));
+  const students = await users.studentSummaries([...inBatch.keys()]);
+  // T2: a deactivated student has left; absences after that are not a risk to act on.
+  const facts = new Map([...inBatch].filter(([id]) => students.get(id)?.isActive !== false));
   summary.batches = 1;
   summary.students = facts.size;
 

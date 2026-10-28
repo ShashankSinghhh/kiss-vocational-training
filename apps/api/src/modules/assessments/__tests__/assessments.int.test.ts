@@ -90,6 +90,32 @@ describe('assessments (BRQ-6.1)', () => {
       .send({ title: 'Zero', mode: 'THEORY', maxMarks: 0, weightage: 10, isMandatory: false });
     expect(bad.status).toBe(422);
   });
+
+  it('keeps the date within the batch dates, on create and on edit (T1)', async () => {
+    const w = await world();
+    const after = new Date(w.batch.endDate.getTime() + 86_400_000).toISOString().slice(0, 10);
+    const res = await request(app)
+      .post(`/api/v1/batches/${w.batch.id}/assessments`)
+      .set(w.trainerAuth)
+      .send({
+        title: 'Late quiz',
+        mode: 'THEORY',
+        maxMarks: 10,
+        weightage: 1,
+        isMandatory: true,
+        heldOn: after,
+      });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('HELD_OUTSIDE_BATCH');
+
+    const lastDay = w.batch.endDate.toISOString().slice(0, 10);
+    const a = await newAssessment(w, { heldOn: lastDay });
+    const moved = await request(app)
+      .patch(`/api/v1/assessments/${a.id}`)
+      .set(w.trainerAuth)
+      .send({ heldOn: after });
+    expect(moved.status).toBe(422);
+  });
 });
 
 describe('marks (BRQ-6.2, BR-07)', () => {

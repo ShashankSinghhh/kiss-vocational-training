@@ -5,6 +5,12 @@ info:
   description: |
     KISS Vocational Training Management Portal API. All endpoints live under /api/v1 and
     return JSON. Errors always use the Error schema below.
+
+    A user whose password an admin set (a new account created with mustChangePassword, or a
+    reset) gets 403 PASSWORD_CHANGE_REQUIRED on every signed-in route except GET /auth/me,
+    POST /users/me/password, PATCH /users/me and GET /notifications/me until they choose their
+    own password. The global request limit counts signed-in requests per user and anonymous
+    ones per IP.
 servers:
   - url: http://localhost:4000/api/v1
     description: Local development
@@ -63,7 +69,9 @@ paths:
         Returns a 15-minute access token in the body and sets a 7-day refresh token in the
         httpOnly `vtmp_rt` cookie (path /api/v1/auth). Wrong email, wrong password and
         deactivated accounts all return the same 401. After `auth.maxFailedLogins` failures the
-        account is locked for `auth.lockMinutes` (429 ACCOUNT_LOCKED). Rate-limited per IP.
+        account is locked for `auth.lockMinutes`; a locked account also gets that same 401
+        INVALID_CREDENTIALS (whose message mentions the lock), so the answer never shows that
+        an email exists. Admins can unlock it. Rate-limited per IP.
       security: []
       requestBody:
         required: true
@@ -146,7 +154,11 @@ paths:
               required: [currentPassword, newPassword]
               properties:
                 currentPassword: { type: string }
-                newPassword: { type: string, minLength: 8, maxLength: 72 }
+                newPassword:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+                  description: At least one letter and one digit.
       responses:
         '204': { description: Password changed }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -239,7 +251,10 @@ paths:
     patch:
       tags: [admin-users]
       summary: Rename, change locale, deactivate or reactivate a user (Admin)
-      description: Deactivation revokes every session. Admins cannot deactivate themselves (409).
+      description: >-
+        Deactivation revokes every session. Admins cannot deactivate themselves (409), nor the
+        only trainer of a planned or active batch (409 TRAINER_STILL_NEEDED; assign another
+        trainer first).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -276,6 +291,21 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /admin/users/{id}/unlock:
+    post:
+      tags: [admin-users]
+      summary: Clear a login lock so the user can sign in again at once (Admin)
+      description: Audited as USER_UNLOCKED with the lock that was cleared.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Unlocked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserSummary' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /admin/users/{id}/password:
     post:
       tags: [admin-users]
@@ -294,7 +324,15 @@ paths:
               type: object
               required: [password]
               properties:
-                password: { type: string, minLength: 8, maxLength: 72 }
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 72
+                  description: At least one letter and one digit.
+                mustChangePassword:
+                  type: boolean
+                  default: true
+                  description: Ask the user to choose their own password at next sign-in.
       responses:
         '200':
           description: Updated
@@ -310,7 +348,11 @@ paths:
     get:
       tags: [catalogue]
       summary: Course catalogue for a cycle (BRQ-2.2)
-      description: Active courses offered in the cycle (default the newest cycle with offerings), with window state and indicative seats remaining.
+      description: >-
+        Active courses offered in the cycle (default the newest cycle with offerings), with
+        window state and indicative seats remaining. Once a course has batches in the cycle,
+        seatCapacity is the total of their capacities; until then it is the course's planned
+        capacity.
       parameters:
         - { name: cycleId, in: query, schema: { type: string, format: uuid } }
       responses:
@@ -349,6 +391,9 @@ paths:
     get:
       tags: [admin-courses]
       summary: All courses incl. inactive (Admin)
+      description: >-
+        Each course carries inUse - planned or running batches, students placed in them and
+        open enrollment windows - so the admin sees what deactivating it would affect.
       responses:
         { '200': { description: Courses }, '403': { $ref: '#/components/responses/Forbidden' } }
     post:
@@ -367,6 +412,10 @@ paths:
                 description: { type: string }
                 durationWeeks: { type: integer, minimum: 1 }
                 prerequisites: { type: string, nullable: true }
+                prerequisitesNeedReview:
+                  type: boolean
+                  default: true
+                  description: Automatic approval waits for a person to check the prerequisites.
                 seatCapacity: { type: integer, minimum: 1 }
       responses:
         '201': { description: Created }
@@ -919,7 +968,7 @@ paths:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/Session' } }
         '409':
-          description: 'SCHEDULE_CLASH (BR-20): the venue, or a trainer named on the session, is already booked at an overlapping time; details list each clash. Nothing is saved.'
+          description: "SCHEDULE_CLASH (BR-20): the venue, or a trainer certainly teaching both sessions (named on the session, or the batch's only trainer), is already booked at an overlapping time; details list each clash. Nothing is saved."
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
@@ -1088,9 +1137,15 @@ paths:
                 maxMarks: { type: number, exclusiveMinimum: true, minimum: 0 }
                 weightage: { type: number, exclusiveMinimum: true, minimum: 0 }
                 isMandatory: { type: boolean }
-                heldOn: { type: string, format: date, nullable: true }
+                heldOn:
+                  type: string
+                  format: date
+                  nullable: true
+                  description: Must fall within the batch's dates (422 HELD_OUTSIDE_BATCH).
       responses:
-        { '201': { description: Created }, '403': { $ref: '#/components/responses/Forbidden' } }
+        '201': { description: Created }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /assessments/{assessmentId}:
     patch:
       tags: [assessments]
@@ -2107,7 +2162,10 @@ paths:
     get:
       tags: [analytics]
       summary: Outcome analytics (Admin, F20) - completion, certification, attendance, average score, verified competencies and placement rates by course and batch
-      description: Counts come from materialized views refreshed nightly (refreshedAt); rates are computed on read and null when there is nothing to divide by.
+      description: >-
+        Counts come from materialized views refreshed nightly (refreshedAt); rates are computed
+        on read and null when there is nothing to divide by. certificatesSinceRefresh counts
+        certificates issued after that refresh (not in these figures yet).
       parameters:
         - { name: cycleId, in: query, schema: { type: string, format: uuid } }
       responses:
@@ -2359,13 +2417,16 @@ components:
         password: { type: string }
     Me:
       type: object
-      required: [id, email, fullName, role, locale, student, trainer]
+      required: [id, email, fullName, role, locale, mustChangePassword, student, trainer]
       properties:
         id: { type: string, format: uuid }
         email: { type: string }
         fullName: { type: string }
         role: { $ref: '#/components/schemas/Role' }
         locale: { $ref: '#/components/schemas/Locale' }
+        mustChangePassword:
+          type: boolean
+          description: An admin set the password; the user must choose their own first.
         student:
           nullable: true
           type: object
@@ -2403,8 +2464,16 @@ components:
         role: { $ref: '#/components/schemas/Role' }
         email: { type: string, format: email }
         fullName: { type: string }
-        password: { type: string, minLength: 8, maxLength: 72 }
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          description: At least one letter and one digit.
         locale: { $ref: '#/components/schemas/Locale' }
+        mustChangePassword:
+          type: boolean
+          default: false
+          description: Ask the user to choose their own password at first sign-in.
         rollNo: { type: string }
         cgpa: { type: number, minimum: 0, maximum: 10 }
         employeeCode: { type: string }
@@ -2507,6 +2576,10 @@ components:
         passed: { type: boolean }
         actual: { anyOf: [{ type: number, nullable: true }, { type: boolean }] }
         required: { oneOf: [{ type: number }, { type: boolean }] }
+        missing:
+          type: array
+          items: { type: string }
+          description: MANDATORY_ASSESSMENTS only - titles of the ones still without marks.
     CertificateSummary:
       type: object
       properties:

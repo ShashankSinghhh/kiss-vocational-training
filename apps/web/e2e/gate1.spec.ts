@@ -6,7 +6,7 @@ import {
   type Page,
 } from '@playwright/test';
 import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
-import { token } from './world';
+import { addCoTrainer, token } from './world';
 
 // The longest journey in the suite: pages load lazily, and on the dev server (or a cold
 // serverless start) the first visit to a page can take a few seconds.
@@ -131,6 +131,9 @@ test.describe('GATE 1: Release 1 workflow end to end', () => {
       .selectOption({ label: 'Sushant Mohanty — Electrical installation' });
     await page.getByRole('button', { name: 'Assign trainer' }).click();
     await toast(page, 'Trainer assigned');
+    // Many test batches share the seeded trainer at these times (see addCoTrainer).
+    await addCoTrainer(request, batch.id);
+    await page.reload();
     await page.getByRole('tab', { name: 'Sessions' }).click();
     await page.getByRole('button', { name: 'Schedule sessions' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
