@@ -35,7 +35,9 @@ async function snapshot(client: Tx, cycleId: string): Promise<Snapshot> {
         capacity: true,
         status: true,
         course: { select: { title: true } },
-        _count: { select: { students: true } },
+        _count: {
+          select: { students: { where: { enrollment: { status: { not: 'WITHDRAWN' } } } } },
+        },
       },
     }),
   ]);

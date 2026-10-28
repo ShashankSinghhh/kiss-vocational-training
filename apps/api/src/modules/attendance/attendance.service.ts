@@ -34,6 +34,7 @@ async function loadSession(sessionId: string) {
             orderBy: { student: { rollNo: 'asc' } },
             select: {
               studentId: true,
+              enrollment: { select: { status: true } },
               student: {
                 select: { rollNo: true, user: { select: { fullName: true, isActive: true } } },
               },
@@ -53,12 +54,16 @@ async function loadSession(sessionId: string) {
 type LoadedSession = Awaited<ReturnType<typeof loadSession>>;
 
 /**
- * T2: students whose account was deactivated (they left) are not on the sheet any more, unless
- * this session already holds a mark for them, so past records stay visible and editable.
+ * T2 / L4: students whose account was deactivated or who withdrew from the training are not on
+ * the sheet any more, unless this session already holds a mark for them, so past records stay
+ * visible and editable.
  */
 function sheetMembers(s: LoadedSession) {
   const marked = new Set(s.attendance.map((x) => x.studentId));
-  return s.batch.students.filter((m) => m.student.user.isActive || marked.has(m.studentId));
+  return s.batch.students.filter(
+    (m) =>
+      (m.student.user.isActive && m.enrollment.status !== 'WITHDRAWN') || marked.has(m.studentId),
+  );
 }
 
 function firstMarked(s: LoadedSession): Date | null {
@@ -254,24 +259,38 @@ interface StatusesRow {
   roll_no: string;
   full_name: string;
   statuses: AttendanceStatus[];
+  unrecorded: number;
 }
 
-/** Per-student marks on CONDUCTED sessions of a batch, newest first, in one query. */
-async function statusesFor(batchId: string, studentId?: string): Promise<StatusesRow[]> {
+/**
+ * Per-student marks on CONDUCTED sessions of a batch, newest first, in one query, with the
+ * sessions that ended after the student joined but are still SCHEDULED, i.e. never marked (L2).
+ */
+async function statusesFor(
+  batchId: string,
+  studentId?: string,
+  now = new Date(),
+): Promise<StatusesRow[]> {
   return prisma().$queryRaw<StatusesRow[]>`
     SELECT bs.student_id, st.roll_no, u.full_name,
       COALESCE(
         array_agg(a.status::text ORDER BY ts.starts_at DESC) FILTER (WHERE a.id IS NOT NULL),
         '{}'
-      ) AS statuses
+      ) AS statuses,
+      (SELECT COUNT(*)::int FROM training_sessions us
+        WHERE us.batch_id = bs.batch_id AND us.status = 'SCHEDULED'
+          AND us.ends_at <= ${now} AND us.ends_at > bs.allocated_at) AS unrecorded
     FROM batch_students bs
     JOIN students st ON st.id = bs.student_id
     JOIN users u ON u.id = st.user_id
     LEFT JOIN training_sessions ts ON ts.batch_id = bs.batch_id AND ts.status = 'CONDUCTED'
     LEFT JOIN attendance a ON a.session_id = ts.id AND a.student_id = bs.student_id
+    JOIN enrollments e ON e.id = bs.enrollment_id
     WHERE bs.batch_id = ${batchId}::uuid
       AND (${studentId ?? null}::uuid IS NULL OR bs.student_id = ${studentId ?? null}::uuid)
-    GROUP BY bs.student_id, st.roll_no, u.full_name
+      -- L4: the batch summary leaves out students who withdrew; their own figures stay readable.
+      AND (${studentId ?? null}::uuid IS NOT NULL OR e.status <> 'WITHDRAWN')
+    GROUP BY bs.student_id, bs.batch_id, bs.allocated_at, st.roll_no, u.full_name
     ORDER BY st.roll_no`;
 }
 
@@ -282,7 +301,7 @@ export async function batchSummary(batchId: string): Promise<BatchAttendanceRow[
     studentId: r.student_id,
     rollNo: r.roll_no,
     fullName: r.full_name,
-    ...attendanceFigures(r.statuses, late),
+    ...attendanceFigures(r.statuses, late, Number(r.unrecorded)),
   }));
 }
 
@@ -293,7 +312,7 @@ export async function studentFigures(
 ): Promise<AttendanceFigures> {
   const late = await settings.get('attendance.lateCountsAsPresent');
   const [row] = await statusesFor(batchId, studentId);
-  return attendanceFigures(row?.statuses ?? [], late);
+  return attendanceFigures(row?.statuses ?? [], late, Number(row?.unrecorded ?? 0));
 }
 
 /** The student's session history in a batch with their own mark only (privacy). */
@@ -343,10 +362,16 @@ export async function mySessions(
         select: {
           name: true,
           course: { select: { title: true } },
-          _count: { select: { students: true } },
+          _count: {
+            select: { students: { where: { enrollment: { status: { not: 'WITHDRAWN' } } } } },
+          },
+          students: {
+            where: { enrollment: { status: 'WITHDRAWN' } },
+            select: { studentId: true },
+          },
         },
       },
-      _count: { select: { attendance: true } },
+      attendance: { select: { studentId: true } },
     },
   });
   return rows.map((s) => ({
@@ -361,7 +386,9 @@ export async function mySessions(
     trainerName: s.trainer?.user.fullName ?? null,
     batchName: s.batch.name,
     courseTitle: s.batch.course.title,
-    marked: s._count.attendance,
+    // L4: marks of students who withdrew don't count against the current roster.
+    marked: s.attendance.filter((x) => !s.batch.students.some((m) => m.studentId === x.studentId))
+      .length,
     rosterSize: s.batch._count.students,
   }));
 }

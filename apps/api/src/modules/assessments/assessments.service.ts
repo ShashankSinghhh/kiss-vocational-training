@@ -29,14 +29,24 @@ interface Viewer extends Actor {
 const num = (d: Prisma.Decimal) => Number(d);
 const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
 
-type AssessmentRow = Prisma.AssessmentGetPayload<{
-  include: {
-    _count: { select: { results: true } };
-    batch: { select: { _count: { select: { students: true } } } };
-  };
-}>;
+/** L4: students who withdrew mid-training; their earlier marks stay but don't count here. */
+const WITHDRAWN = { enrollment: { status: 'WITHDRAWN' } } as const;
+
+const include = {
+  _count: { select: { results: true } },
+  results: { select: { studentId: true } },
+  batch: {
+    select: {
+      _count: { select: { students: { where: { NOT: WITHDRAWN } } } },
+      students: { where: WITHDRAWN, select: { studentId: true } },
+    },
+  },
+} satisfies Prisma.AssessmentInclude;
+
+type AssessmentRow = Prisma.AssessmentGetPayload<{ include: typeof include }>;
 
 function toDto(a: AssessmentRow): AssessmentDto {
+  const withdrawn = new Set(a.batch.students.map((m) => m.studentId));
   return {
     id: a.id,
     batchId: a.batchId,
@@ -46,15 +56,11 @@ function toDto(a: AssessmentRow): AssessmentDto {
     weightage: num(a.weightage),
     isMandatory: a.isMandatory,
     heldOn: day(a.heldOn),
-    recorded: a._count.results,
+    // Marks of the students still in the batch, against those students (L4).
+    recorded: a.results.filter((r) => !withdrawn.has(r.studentId)).length,
     rosterSize: a.batch._count.students,
   };
 }
-
-const include = {
-  _count: { select: { results: true } },
-  batch: { select: { _count: { select: { students: true } } } },
-} as const;
 
 async function load(id: string): Promise<AssessmentRow> {
   const a = await prisma().assessment.findUnique({ where: { id }, include });
@@ -193,9 +199,10 @@ export async function remove(actor: Viewer, id: string): Promise<void> {
 
 // ─── Results (BRQ-6.2, BR-07) ──────────────────────────────────────────────────
 
+/** Students who withdrew (L4) are left off mark entry. */
 async function roster(batchId: string) {
   return prisma().batchStudent.findMany({
-    where: { batchId },
+    where: { batchId, enrollment: { status: { not: 'WITHDRAWN' } } },
     orderBy: { student: { rollNo: 'asc' } },
     select: {
       studentId: true,
@@ -462,7 +469,7 @@ function toEvaluation(
 
 export async function evaluations(batchId: string): Promise<EvaluationRow[]> {
   const members = await prisma().batchStudent.findMany({
-    where: { batchId },
+    where: { batchId, enrollment: { status: { not: 'WITHDRAWN' } } },
     orderBy: { student: { rollNo: 'asc' } },
     select: {
       enrollmentId: true,

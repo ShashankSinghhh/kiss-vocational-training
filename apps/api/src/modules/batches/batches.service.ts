@@ -18,10 +18,18 @@ import { prisma, type Tx } from '../../core/db';
 import { AppError } from '../../core/errors';
 import { settings } from '../../core/settings';
 import * as enrollments from '../enrollments/enrollments.service';
-import { clashesFor, type BookedSlot } from './rules';
+import { clashesFor, closeBlocker, type BookedSlot } from './rules';
 import { expandRecurring, MAX_GENERATED_SESSIONS } from './sessionsSchedule';
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
+
+/**
+ * L4: a student who withdrew mid-training stays on the roster (their record is kept) but no
+ * longer holds a seat, so counts of members use this filter.
+ */
+const SEATED = {
+  enrollment: { status: { not: 'WITHDRAWN' } },
+} satisfies Prisma.BatchStudentWhereInput;
 
 // ─── Mapping ───────────────────────────────────────────────────────────────────
 
@@ -50,7 +58,7 @@ const batchInclude = (now: Date) =>
       orderBy: { assignedAt: 'asc' },
       select: { trainer: { select: { id: true, user: { select: { fullName: true } } } } },
     },
-    _count: { select: { students: true } },
+    _count: { select: { students: { where: SEATED } } },
     sessions: {
       where: { status: 'SCHEDULED', startsAt: { gte: now } },
       orderBy: { startsAt: 'asc' },
@@ -96,7 +104,7 @@ async function lockBatch(tx: Tx, id: string) {
     FROM batches WHERE id = ${id}::uuid FOR UPDATE`;
   const b = rows[0];
   if (!b) throw AppError.notFound('Batch not found');
-  const members = await tx.batchStudent.count({ where: { batchId: id } });
+  const members = await tx.batchStudent.count({ where: { batchId: id, ...SEATED } });
   return { ...b, members };
 }
 
@@ -271,7 +279,8 @@ export async function membersByCourse(cycleId: string): Promise<Map<string, numb
   const rows = await prisma().$queryRaw<{ course_id: string; n: number }[]>`
     SELECT b.course_id, COUNT(*)::int AS n
     FROM batch_students bs JOIN batches b ON b.id = bs.batch_id
-    WHERE b.cycle_id = ${cycleId}::uuid
+    JOIN enrollments e ON e.id = bs.enrollment_id
+    WHERE b.cycle_id = ${cycleId}::uuid AND e.status <> 'WITHDRAWN'
     GROUP BY b.course_id`;
   return new Map(rows.map((r) => [r.course_id, Number(r.n)]));
 }
@@ -282,7 +291,7 @@ export async function liveBatchesByCourse(): Promise<
 > {
   const rows = await prisma().batch.findMany({
     where: { status: { in: ['PLANNED', 'ACTIVE'] } },
-    select: { courseId: true, _count: { select: { students: true } } },
+    select: { courseId: true, _count: { select: { students: { where: SEATED } } } },
   });
   const out = new Map<string, { batches: number; students: number }>();
   for (const r of rows) {
@@ -424,6 +433,62 @@ export async function activate(actor: Actor, id: string): Promise<BatchSummary> 
   );
 }
 
+/** Today's calendar date at the institution, YYYY-MM-DD. */
+async function institutionToday(now = new Date()): Promise<string> {
+  const offset = await settings.get('institution.utcOffsetMinutes');
+  return day(new Date(now.getTime() + offset * 60_000));
+}
+
+/**
+ * L1: ACTIVE → CLOSED once the batch has ended and every student has a decision (completed,
+ * not completed or withdrawn). A closed batch takes no attendance, marks or new students and
+ * drops out of "active" lists; its records stay readable.
+ */
+export async function close(actor: Actor, id: string): Promise<BatchSummary> {
+  const today = await institutionToday();
+  return withAudit(actor, async (tx, log) => {
+    const locked = await lockBatch(tx, id);
+    const batch = await tx.batch.findUniqueOrThrow({ where: { id }, select: { endDate: true } });
+    const undecided = await tx.batchStudent.findMany({
+      where: { batchId: id, enrollment: { status: { in: ['ALLOCATED', 'ACTIVE'] } } },
+      orderBy: { student: { rollNo: 'asc' } },
+      select: { student: { select: { rollNo: true, user: { select: { fullName: true } } } } },
+    });
+    const blocker = closeBlocker(locked.status, day(batch.endDate), today, undecided.length);
+    if (blocker === 'INVALID_BATCH_STATUS') {
+      throw AppError.conflict(
+        'INVALID_BATCH_STATUS',
+        `Only active batches can be closed (this one is ${locked.status})`,
+      );
+    }
+    if (blocker === 'BATCH_NOT_ENDED') {
+      throw AppError.conflict(
+        'BATCH_NOT_ENDED',
+        `The batch can be closed after its end date (${day(batch.endDate)})`,
+      );
+    }
+    if (blocker === 'STUDENTS_UNDECIDED') {
+      throw AppError.conflict(
+        'STUDENTS_UNDECIDED',
+        `${undecided.length} student(s) still need a completion decision`,
+        undecided.map((u) => ({
+          path: u.student.rollNo,
+          message: u.student.user.fullName,
+        })),
+      );
+    }
+    await tx.batch.update({ where: { id }, data: { status: 'CLOSED' } });
+    await log({
+      action: 'BATCH_CLOSED',
+      entity: 'Batch',
+      entityId: id,
+      oldValue: { status: 'ACTIVE' },
+      newValue: { status: 'CLOSED' },
+    });
+    return toSummary(await loadBatch(tx, id));
+  });
+}
+
 // ─── Admin: placing students (BRQ-4.4, BR-03) ──────────────────────────────────
 
 const placedStatus = (batchStatus: BatchStatus): EnrollmentStatus =>
@@ -520,6 +585,64 @@ export async function removeStudent(
   return detail(batchId, 'ADMIN');
 }
 
+/**
+ * L4: a student leaves training. From a planned batch the seat is simply given up (membership
+ * removed, ALLOCATED → WITHDRAWN). From a running batch the membership stays, so attendance and
+ * marks so far remain on record, but the student no longer holds a seat, is left off sheets and
+ * risk checks, and the application becomes WITHDRAWN with the reason. Audited and notified.
+ */
+export async function withdrawStudent(
+  actor: Actor,
+  batchId: string,
+  enrollmentId: string,
+  reason: string,
+): Promise<BatchDetail> {
+  const facts = await enrollments.placementFacts(enrollmentId);
+  if (!facts) throw AppError.notFound('Application not found');
+  await withAudit(actor, async (tx, log) => {
+    const b = await lockBatch(tx, batchId);
+    const member = await tx.batchStudent.findUnique({ where: { enrollmentId } });
+    if (!member || member.batchId !== batchId)
+      throw AppError.notFound('This student is not in the batch');
+    if (b.status === 'CLOSED') throw AppError.conflict('BATCH_CLOSED', 'This batch is closed');
+    const from = placedStatus(b.status);
+    if (facts.status !== from) {
+      throw AppError.conflict(
+        'NOT_IN_TRAINING',
+        `Only a student in training can be withdrawn (this one is ${facts.status})`,
+      );
+    }
+    if (b.status === 'PLANNED') await tx.batchStudent.delete({ where: { enrollmentId } });
+    const batch = await tx.batch.findUniqueOrThrow({
+      where: { id: batchId },
+      select: { name: true, course: { select: { title: true } } },
+    });
+    await log({
+      action: 'BATCH_STUDENT_WITHDRAWN',
+      entity: 'Batch',
+      entityId: batchId,
+      oldValue: { enrollmentId, studentId: member.studentId, status: from },
+      newValue: { status: 'WITHDRAWN', reason, keptOnRoster: b.status === 'ACTIVE' },
+    });
+    await enrollments.changeStatuses(tx, log, [
+      {
+        enrollmentId,
+        from: [from],
+        to: 'WITHDRAWN',
+        reason,
+        notify: {
+          userId: facts.userId,
+          type: 'TRAINING_WITHDRAWN',
+          title: 'Withdrawn from training',
+          body: `${batch.course.title}, ${batch.name}: ${reason}`,
+          data: { courseTitle: batch.course.title, batchName: batch.name, reason },
+        },
+      },
+    ]);
+  });
+  return detail(batchId, 'ADMIN');
+}
+
 /** Moves a student to another batch in the same cycle and one of their chosen courses (TC-07). */
 export async function moveStudent(
   actor: Actor,
@@ -531,6 +654,12 @@ export async function moveStudent(
     throw AppError.unprocessable('SAME_BATCH', 'Choose a different batch');
   const facts = await enrollments.placementFacts(enrollmentId);
   if (!facts) throw AppError.notFound('Application not found');
+  if (facts.status !== 'ALLOCATED' && facts.status !== 'ACTIVE') {
+    throw AppError.conflict(
+      'NOT_IN_TRAINING',
+      `Only a student in training can be moved (this one is ${facts.status})`,
+    );
+  }
   await withAudit(actor, async (tx, log) => {
     // Lock in a stable order so two opposite moves cannot deadlock.
     const [first, second] = [fromBatchId, toBatchId].sort();
@@ -746,7 +875,7 @@ export async function capacityOf(
       capacity: true,
       venue: true,
       course: { select: { title: true } },
-      _count: { select: { students: true } },
+      _count: { select: { students: { where: SEATED } } },
     },
   });
   return new Map(

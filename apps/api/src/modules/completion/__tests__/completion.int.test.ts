@@ -116,6 +116,7 @@ describe('completion queue (BRQ-9.4)', () => {
       eligible: false,
       checks: [
         { rule: 'ATTENDANCE', passed: false, actual: 50, required: 75 },
+        { rule: 'SESSIONS_RECORDED', passed: true, actual: 0, required: 0 },
         { rule: 'MANDATORY_ASSESSMENTS', passed: false, actual: 0, required: 1 },
         { rule: 'AGGREGATE', passed: false, actual: null, required: 40 },
         { rule: 'RECOMMENDATION', passed: false, actual: null, required: true },
@@ -178,6 +179,36 @@ describe('approve → certificate (TAD §8.1)', () => {
     const res = await approve(w, s.enrollmentId);
     expect(res.status).toBe(409);
     expect(res.body.error.details).toEqual([{ path: 'RECOMMENDATION', message: 'false / true' }]);
+  });
+
+  it('L2: a session that ended without being marked blocks completion until it is marked', async () => {
+    const w = await world();
+    const db = prisma();
+    const s = await setStudent(w, 0, { attended: 4, marks: 50, recommended: true });
+    // The student joined before training started; one more session has ended, never marked.
+    await db.batchStudent.update({
+      where: { enrollmentId: s.enrollmentId },
+      data: { allocatedAt: new Date(Date.now() - 30 * 86_400_000) },
+    });
+    const endsAt = new Date(Date.now() - 3_600_000);
+    await db.trainingSession.create({
+      data: {
+        batchId: w.batch.id,
+        startsAt: new Date(endsAt.getTime() - 7_200_000),
+        endsAt,
+        venue: 'Lab 1',
+      },
+    });
+
+    const res = await approve(w, s.enrollmentId);
+    expect(res.status).toBe(409);
+    expect(res.body.error.details).toEqual([{ path: 'SESSIONS_RECORDED', message: '1 / 0' }]);
+    const summary = await request(app)
+      .get(`/api/v1/batches/${w.batch.id}/attendance-summary`)
+      .set(w.adminAuth);
+    expect(
+      summary.body.find((r: { studentId: string }) => r.studentId === s.studentId),
+    ).toMatchObject({ percent: 100, unrecorded: 1 });
   });
 
   it('TC-16: eligible → COMPLETED and certificate in one step, then PDF stored and CERTIFIED (BRQ-7.3)', async () => {

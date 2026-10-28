@@ -104,6 +104,13 @@ export const useActivateBatch = () =>
     }),
   );
 
+export const useCloseBatch = () =>
+  useBatchMutation((id: string) =>
+    api.post<BatchSummary>(`/admin/batches/${id}/close`, undefined, {
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+    }),
+  );
+
 export const usePlaceStudent = () =>
   useBatchMutation(({ batchId, enrollmentId }: { batchId: string; enrollmentId: string }) =>
     api.post<BatchDetail>(`/admin/batches/${batchId}/students`, { enrollmentId }),
@@ -112,6 +119,24 @@ export const usePlaceStudent = () =>
 export const useRemoveStudent = () =>
   useBatchMutation(({ batchId, enrollmentId }: { batchId: string; enrollmentId: string }) =>
     api.delete<BatchDetail>(`/admin/batches/${batchId}/students/${enrollmentId}`),
+  );
+
+export const useWithdrawStudent = () =>
+  useBatchMutation(
+    ({
+      batchId,
+      enrollmentId,
+      reason,
+    }: {
+      batchId: string;
+      enrollmentId: string;
+      reason: string;
+    }) =>
+      api.post<BatchDetail>(
+        `/admin/batches/${batchId}/students/${enrollmentId}/withdraw`,
+        { reason },
+        { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+      ),
   );
 
 export const useMoveStudent = () =>

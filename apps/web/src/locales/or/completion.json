@@ -42,6 +42,7 @@
   },
   "rule": {
     "ATTENDANCE": "ଉପସ୍ଥିତି {{actual}} (ସର୍ବନିମ୍ନ {{required}} %)",
+    "SESSIONS_RECORDED": "ଏପର୍ଯ୍ୟନ୍ତ ଲେଖା ହୋଇନଥିବା ସତ୍ର: {{actual}}",
     "MANDATORY_ASSESSMENTS": "ଲେଖାଯାଇଥିବା ବାଧ୍ୟତାମୂଳକ ମୂଲ୍ୟାଙ୍କନ: {{required}}ରୁ {{actual}}",
     "AGGREGATE": "ମୋଟ ମାର୍କ {{actual}} (ସର୍ବନିମ୍ନ {{required}} %)",
     "RECOMMENDATION": "ପ୍ରଶିକ୍ଷକଙ୍କ ସୁପାରିଶ: {{actual}}",
@@ -55,6 +56,7 @@
   },
   "ruleShort": {
     "ATTENDANCE": "ଉପସ୍ଥିତି ସର୍ବନିମ୍ନଠାରୁ କମ୍",
+    "SESSIONS_RECORDED": "କିଛି ସତ୍ରର ଉପସ୍ଥିତି ଲେଖା ହୋଇନାହିଁ",
     "MANDATORY_ASSESSMENTS": "ବାଧ୍ୟତାମୂଳକ ମୂଲ୍ୟାଙ୍କନ ବାକି",
     "AGGREGATE": "ମୋଟ ମାର୍କ ସର୍ବନିମ୍ନଠାରୁ କମ୍",
     "RECOMMENDATION": "ପ୍ରଶିକ୍ଷକ ସୁପାରିଶ କରିନାହାନ୍ତି"

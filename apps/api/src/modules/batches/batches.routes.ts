@@ -11,6 +11,7 @@ import {
   MoveStudentSchema,
   SessionCreateSchema,
   SessionStatusUpdateSchema,
+  WithdrawFromTrainingSchema,
 } from '@vtmp/shared';
 import { authenticate, authorize, owns, requireOwnership } from '../../core/auth';
 import { idempotency, validate } from '../../core/middleware';
@@ -77,6 +78,12 @@ export function adminBatchRoutes(): Router {
     idempotency(),
     controller.activate,
   );
+  router.post(
+    '/batches/:batchId/close',
+    validate({ params: BatchParams }),
+    idempotency(),
+    controller.close,
+  );
 
   router.get(
     '/batches/:batchId/candidates',
@@ -97,6 +104,12 @@ export function adminBatchRoutes(): Router {
     '/batches/:batchId/students/:enrollmentId/move',
     validate({ params: StudentParams, body: MoveStudentSchema }),
     controller.moveStudent,
+  );
+  router.post(
+    '/batches/:batchId/students/:enrollmentId/withdraw',
+    validate({ params: StudentParams, body: WithdrawFromTrainingSchema }),
+    idempotency(),
+    controller.withdrawStudent,
   );
 
   router.post(

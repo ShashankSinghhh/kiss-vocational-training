@@ -35,6 +35,10 @@
       "title": "ପ୍ରଶିକ୍ଷଣ ସମ୍ପୂର୍ଣ୍ଣ ହୋଇନି",
       "body": "{{courseTitle}}: {{reason}}"
     },
+    "TRAINING_WITHDRAWN": {
+      "title": "ପ୍ରଶିକ୍ଷଣରୁ ନାମ ପ୍ରତ୍ୟାହାର",
+      "body": "{{courseTitle}}, {{batchName}}: {{reason}}"
+    },
     "CERTIFICATE_ISSUED": {
       "title": "ଆପଣଙ୍କ ପ୍ରମାଣପତ୍ର ପ୍ରସ୍ତୁତ",
       "body": "ପ୍ରମାଣପତ୍ର {{publicCode}} 'ମୋ ପ୍ରମାଣପତ୍ର'ରୁ ଡାଉନଲୋଡ୍ କରିହେବ।"

@@ -43,6 +43,7 @@ async function assess(batchId: string, studentId: string, enrollmentId: string):
   return {
     facts: {
       attendancePercent: figures.percent,
+      unrecordedSessions: figures.unrecorded,
       mandatoryTotal: mandatory.length,
       mandatoryRecorded: mandatory.filter((r) => r.marks !== null).length,
       mandatoryMissing: mandatory.filter((r) => r.marks === null).map((r) => r.title),

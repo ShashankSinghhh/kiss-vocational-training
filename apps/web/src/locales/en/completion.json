@@ -42,6 +42,7 @@
   },
   "rule": {
     "ATTENDANCE": "Attendance {{actual}} (minimum {{required}} %)",
+    "SESSIONS_RECORDED": "Sessions not marked yet: {{actual}}",
     "MANDATORY_ASSESSMENTS": "Mandatory assessments recorded: {{actual}} of {{required}}",
     "AGGREGATE": "Aggregate {{actual}} (minimum {{required}} %)",
     "RECOMMENDATION": "Trainer recommendation: {{actual}}",
@@ -55,6 +56,7 @@
   },
   "ruleShort": {
     "ATTENDANCE": "Attendance below the minimum",
+    "SESSIONS_RECORDED": "Some sessions were never marked",
     "MANDATORY_ASSESSMENTS": "Mandatory assessments missing",
     "AGGREGATE": "Aggregate below the minimum",
     "RECOMMENDATION": "Not recommended by the trainer"

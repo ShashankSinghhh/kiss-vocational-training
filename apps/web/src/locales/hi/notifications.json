@@ -35,6 +35,10 @@
       "title": "प्रशिक्षण पूरा नहीं हुआ",
       "body": "{{courseTitle}}: {{reason}}"
     },
+    "TRAINING_WITHDRAWN": {
+      "title": "प्रशिक्षण से नाम वापस",
+      "body": "{{courseTitle}}, {{batchName}}: {{reason}}"
+    },
     "CERTIFICATE_ISSUED": {
       "title": "आपका प्रमाणपत्र तैयार है",
       "body": "प्रमाणपत्र {{publicCode}} को 'मेरे प्रमाणपत्र' से डाउनलोड किया जा सकता है।"

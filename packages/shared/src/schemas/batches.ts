@@ -82,6 +82,11 @@ export interface BatchDetail extends BatchSummary {
 
 export const AssignStudentSchema = z.object({ enrollmentId: z.string().uuid() }).strict();
 export const MoveStudentSchema = z.object({ toBatchId: z.string().uuid() }).strict();
+/** L4: a student leaves a planned or running batch; the reason is kept on the application. */
+export const WithdrawFromTrainingSchema = z
+  .object({ reason: z.string().trim().min(3).max(500) })
+  .strict();
+export type WithdrawFromTrainingInput = z.infer<typeof WithdrawFromTrainingSchema>;
 export const AssignTrainerSchema = z.object({ trainerId: z.string().uuid() }).strict();
 
 export interface Candidate {

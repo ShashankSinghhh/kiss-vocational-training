@@ -134,8 +134,12 @@ Your batches, today's sessions and students who need attention.
 2. **Save attendance.** You can change it for 48 hours; after that only an admin can, with a
    reason, and the change is logged.
 
-A student whose account was deactivated (they left) is no longer on new attendance sheets;
-sessions already marked keep their mark.
+A student whose account was deactivated, or who was withdrawn from the training, is no longer
+on new attendance sheets; sessions already marked keep their mark.
+
+Mark every session once it has ended. A session that ended but was never marked shows in the
+batch's **Attendance** tab under *Not marked*, and it holds up completion: the attendance
+percentage counts only marked sessions, so it would otherwise look better than it is.
 
 With a keyboard: Tab moves between students, the arrow keys choose Present / Late / Absent.
 
@@ -215,12 +219,22 @@ no record ever loses its student, trainer or course.
 
 ![Batches](screenshots/admin-batches.jpg)
 
+4. **A student leaves**: on the batch's **Students** tab press **Withdraw** and give a reason
+   (the student sees it). Before the batch starts the seat is simply freed. Once training has
+   started the student stays on the list as *Withdrawn*, with their attendance and marks so far,
+   but leaves attendance sheets, mark entry and risk checks, and the seat is freed.
+5. **Training is over**: once every student has a decision on **Completions** (completed, not
+   completed or withdrawn), press **Close batch** on the batch, from the day after its end
+   date. A closed batch takes no more attendance, marks, sessions or students and leaves the
+   lists of active batches; everything recorded stays readable.
+
 ### Completion and certificates
 
 ![Completions](screenshots/admin-completions.jpg)
 
 **Completions** shows every student of a batch with the completion checks: attendance ≥ 75 %,
-all mandatory assessments, aggregate ≥ 40 % and the trainer's recommendation. **Approve** issues
+every session that has ended marked, all mandatory assessments, aggregate ≥ 40 % and the
+trainer's recommendation. **Approve** issues
 the certificate (PDF with ID and QR code); students who don't meet the rules can be marked *Not
 completed* with a reason.
 
@@ -287,7 +301,8 @@ shown.
 | "Wrong email or password, or the account is locked" | Check the email and password. After 5 wrong tries the account is locked for 15 minutes: wait, or ask an admin to **Unlock** it. |
 | New password refused | Use at least 8 characters with at least one letter and one digit. |
 | Can't edit attendance | The 48-hour window has passed: ask an admin to correct it. |
-| Not eligible to complete | The Completions page shows which rule fails (attendance, missing assessment by name, aggregate, recommendation). |
+| Not eligible to complete | The Completions page shows which rule fails (attendance, sessions not marked yet, missing assessment by name, aggregate, recommendation). |
+| *Close batch* is greyed out | The end date hasn't passed yet, or the dialog lists students who still need a decision on **Completions**. |
 | Sent to *Change password* at sign-in | The training office set your password: type it as the current password and choose your own. |
 | A shared passport link stopped working | It expired or the student revoked it: ask for a new link. |
 | Wrong language | Use the language menu at the top; it is remembered on your profile. |

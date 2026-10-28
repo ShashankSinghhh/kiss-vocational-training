@@ -1,6 +1,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
-import { addCoTrainer } from './world';
+import { addCoTrainer, setupActiveBatch } from './world';
 
 async function token(request: APIRequestContext, email: string, password: string) {
   const res = await request.post('/api/v1/auth/login', { data: { email, password } });
@@ -162,5 +162,68 @@ test.describe('Sprint 4: allocate → trainer sees roster', () => {
     await expect(card).toContainText('Sushant Mohanty');
     await expect(card).toContainText('Workshop B');
     await studentContext.close();
+  });
+});
+
+test.describe('Round 2: a student leaves, then the batch is closed (L4, L1)', () => {
+  test('admin withdraws a student mid-training and closes the batch once it is over', async ({
+    page,
+    request,
+  }) => {
+    const { batch, students, adminAuth } = await setupActiveBatch(request);
+    const [leaver, stayer] = students as [(typeof students)[0], (typeof students)[0]];
+    const headers = { Authorization: adminAuth };
+
+    await signIn(page, ACCOUNTS.ADMIN);
+    await page.goto(`/admin/batches/${batch.id}`);
+
+    // Not yet: the end date is ahead and both students are still in training.
+    await page.getByRole('button', { name: 'Close batch' }).click();
+    const closing = page.getByRole('dialog', { name: 'Close Evening?' });
+    await expect(closing.getByText(/can be closed after its end date/)).toBeVisible();
+    await expect(closing.getByText('2 students still need a completion decision:')).toBeVisible();
+    await expect(closing.getByRole('button', { name: 'Close batch' })).toBeDisabled();
+    await expectNoSeriousA11yViolations(page);
+    await closing.getByRole('button', { name: 'Cancel' }).click();
+
+    // A student leaves: a reason is required, then the row says Withdrawn.
+    await page.getByRole('button', { name: `Withdraw ${leaver.fullName}` }).click();
+    const withdrawing = page.getByRole('dialog', {
+      name: `Withdraw ${leaver.fullName} from training?`,
+    });
+    await withdrawing.getByRole('button', { name: 'Withdraw' }).click();
+    await expect(withdrawing.getByText('Give a reason of at least 3 characters.')).toBeVisible();
+    await withdrawing.getByLabel('Reason').fill('Moved to another district');
+    await expectNoSeriousA11yViolations(page);
+    await withdrawing.getByRole('button', { name: 'Withdraw' }).click();
+    await expect(
+      page.getByRole('status').filter({ hasText: `${leaver.fullName} was withdrawn` }),
+    ).toBeVisible();
+    const row = page.getByRole('row', { name: new RegExp(leaver.fullName) });
+    await expect(row.getByText('Withdrawn')).toBeVisible();
+    await expect(page.getByRole('button', { name: `Withdraw ${leaver.fullName}` })).toHaveCount(0);
+
+    // Training is over and the other student has a decision: now it closes.
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const ended = await request.patch(`/api/v1/admin/batches/${batch.id}`, {
+      headers,
+      data: { endDate: yesterday },
+    });
+    expect(ended.ok(), await ended.text()).toBeTruthy();
+    const decided = await request.post(`/api/v1/completions/${stayer.enrollmentId}/not-completed`, {
+      headers,
+      data: { reason: 'Did not finish the practical' },
+    });
+    expect(decided.ok(), await decided.text()).toBeTruthy();
+
+    await page.reload();
+    await page.getByRole('button', { name: 'Close batch' }).click();
+    await page
+      .getByRole('dialog', { name: 'Close Evening?' })
+      .getByRole('button', { name: 'Close batch' })
+      .click();
+    await expect(page.getByRole('status').filter({ hasText: 'Batch closed' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Closed');
+    await expect(page.getByRole('button', { name: 'Close batch' })).toHaveCount(0);
   });
 });

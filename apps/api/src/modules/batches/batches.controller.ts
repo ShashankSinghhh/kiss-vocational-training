@@ -4,6 +4,7 @@ import type {
   BatchStatus,
   BatchUpdateInput,
   SessionCreateInput,
+  WithdrawFromTrainingInput,
 } from '@vtmp/shared';
 import { asyncHandler } from '../../core/http';
 import * as allocation from './allocation.service';
@@ -46,6 +47,10 @@ export const activate = asyncHandler(async (req, res) => {
   res.json(await service.activate(actor(req), p(req, 'batchId')));
 });
 
+export const close = asyncHandler(async (req, res) => {
+  res.json(await service.close(actor(req), p(req, 'batchId')));
+});
+
 export const candidates = asyncHandler(async (req, res) => {
   res.json(await service.candidates(p(req, 'batchId')));
 });
@@ -57,6 +62,13 @@ export const addStudent = asyncHandler(async (req, res) => {
 
 export const removeStudent = asyncHandler(async (req, res) => {
   res.json(await service.removeStudent(actor(req), p(req, 'batchId'), p(req, 'enrollmentId')));
+});
+
+export const withdrawStudent = asyncHandler(async (req, res) => {
+  const { reason } = req.body as WithdrawFromTrainingInput;
+  res.json(
+    await service.withdrawStudent(actor(req), p(req, 'batchId'), p(req, 'enrollmentId'), reason),
+  );
 });
 
 export const moveStudent = asyncHandler(async (req, res) => {

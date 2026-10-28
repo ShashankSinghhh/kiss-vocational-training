@@ -35,6 +35,10 @@
       "title": "Training not completed",
       "body": "{{courseTitle}}: {{reason}}"
     },
+    "TRAINING_WITHDRAWN": {
+      "title": "Withdrawn from training",
+      "body": "{{courseTitle}}, {{batchName}}: {{reason}}"
+    },
     "CERTIFICATE_ISSUED": {
       "title": "Your certificate is ready",
       "body": "Certificate {{publicCode}} can be downloaded from My certificates."

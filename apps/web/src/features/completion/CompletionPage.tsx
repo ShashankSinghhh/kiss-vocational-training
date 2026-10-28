@@ -275,7 +275,7 @@ export function CompletionPage() {
   );
 }
 
-/** The four BR-09 checks as a list: icon plus words, so colour is never the only signal. */
+/** The BR-09 checks (plus sessions recorded) as a list: icon plus words, so colour is never the only signal. */
 function Checklist({ row }: { row: CompletionRow }) {
   const { t } = useTranslation('completion');
   const value = (c: EligibilityCheck) => {
@@ -286,7 +286,7 @@ function Checklist({ row }: { row: CompletionRow }) {
           ? t('rule.recommendedYes')
           : t('rule.recommendedNo');
     }
-    if (c.rule === 'MANDATORY_ASSESSMENTS') return c.actual;
+    if (c.rule === 'MANDATORY_ASSESSMENTS' || c.rule === 'SESSIONS_RECORDED') return c.actual;
     return pct(c.actual as number | null) ?? t('rule.noneYet');
   };
   return (

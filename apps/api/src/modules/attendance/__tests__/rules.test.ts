@@ -53,8 +53,15 @@ describe('isAttended / consecutiveAbsences', () => {
       percent: 50,
       absences: 2,
       consecutiveAbsences: 1,
+      unrecorded: 0,
     });
     expect(attendanceFigures([], true)).toMatchObject({ percent: null, conducted: 0 });
+    // L2: unmarked sessions are reported beside the percentage, never folded into it.
+    expect(attendanceFigures(['PRESENT'], true, 2)).toMatchObject({
+      percent: 100,
+      conducted: 1,
+      unrecorded: 2,
+    });
   });
 });
 

@@ -272,6 +272,52 @@ project rule (both below).
 
 ---
 
+## After Sprint 13 — Round 2 high-severity fixes: closing, unmarked sessions, dropouts (2026-10-28)
+
+The three high-severity items from the Round 2 review ("logic that doesn't make sense"). No
+migration: the statuses already existed, only nothing used them.
+
+### Built
+- **L1 Close a batch:** `POST /admin/batches/:id/close` (idempotent) turns an ACTIVE batch
+  CLOSED from the day after its end date (institution calendar), once no student is still
+  ALLOCATED or ACTIVE. Otherwise 409 `BATCH_NOT_ENDED` or `STUDENTS_UNDECIDED` (details name
+  each student). Audited `BATCH_CLOSED`; pure rule `closeBlocker` in `batches/rules.ts`. The
+  batch page has **Close batch**; its dialog says what is still missing and links to
+  Completions. Before, nothing ever set CLOSED, so batches stayed active for ever.
+- **L2 Unmarked sessions:** attendance figures now carry `unrecorded`, the sessions that ended
+  after the student joined (`allocated_at`) but are still SCHEDULED. They stay out of the
+  percentage (it counts marked sessions) and are shown beside it (*Not marked* in the batch's
+  Attendance tab). Completion has a fifth check, `SESSIONS_RECORDED` (0 required), so a student
+  can no longer show 100 % because half the sessions were never marked.
+- **L4 Withdraw from training:** `POST /admin/batches/:id/students/:enrollmentId/withdraw`
+  with a reason (idempotent). From a planned batch the seat is given up (membership removed,
+  ALLOCATED → WITHDRAWN). From a running batch the membership stays, so attendance and marks
+  so far stay on record, but the student no longer holds a seat (capacity, catalogue seats,
+  allocation, roster sizes), is left off attendance sheets (unless already marked on that
+  session), mark entry, evaluations, the attendance summary and risk checks, and is notified
+  (`TRAINING_WITHDRAWN`). Audited `BATCH_STUDENT_WITHDRAWN` plus the status change. A withdrawn
+  student can't be moved (409 `NOT_IN_TRAINING`); Move/Withdraw show only for students in
+  training.
+- The seed places students a week before their batch starts, so `allocated_at` is realistic.
+- Tests: +7 API tests (new `batches/__tests__/lifecycle.int.test.ts`, completion and attendance
+  rules); e2e: withdraw a student, then close the batch. Access-matrix snapshot +2 routes (167).
+
+### Deviations from BRD/TAD (and why)
+- BR-09 lists four completion conditions; `SESSIONS_RECORDED` is a fifth. Without it BR-08's
+  percentage can be inflated by not marking sessions, which defeats the 75 % rule.
+- The BRD has no dropout or batch-closing flow. Withdrawal is admin-only (the report suggested
+  trainers too); trainers can ask the training office.
+
+### Known gaps / follow-ups
+- The 48-hour window still starts at first marking, so a session can be marked late (L3, medium).
+- Closing doesn't notify trainers, and nothing closes batches automatically (A1 in the report).
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed · [x] strings externalized
+  (en, hi, or)
+
+---
+
 ## Sprint 13 — Hardening, quality and final submission (built, 2026-10-26)
 
 ### Built

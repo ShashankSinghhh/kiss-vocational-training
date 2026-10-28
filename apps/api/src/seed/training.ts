@@ -87,8 +87,14 @@ export async function seedTraining(prisma: PrismaClient, log: (m: string) => voi
             preferences: { create: { courseId: course.id, rank: 1 } },
           },
         });
+        // Placed before training began, so sessions that end unmarked count against them (L2).
         await tx.batchStudent.create({
-          data: { batchId: batch.id, enrollmentId: e.id, studentId: s.id },
+          data: {
+            batchId: batch.id,
+            enrollmentId: e.id,
+            studentId: s.id,
+            allocatedAt: new Date(startsOn.getTime() - 7 * DAY_MS),
+          },
         });
         placed.push({ studentId: s.id, enrollmentId: e.id });
       }

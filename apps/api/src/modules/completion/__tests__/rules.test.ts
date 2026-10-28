@@ -3,6 +3,7 @@ import { eligibility, type CompletionFacts } from '../rules';
 const t = { minAttendancePercent: 75, minAggregatePercent: 40 };
 const ok: CompletionFacts = {
   attendancePercent: 90,
+  unrecordedSessions: 0,
   mandatoryTotal: 2,
   mandatoryRecorded: 2,
   aggregate: 70,
@@ -12,11 +13,12 @@ const check = (facts: Partial<CompletionFacts>, rule: string) =>
   eligibility({ ...ok, ...facts }, t).checks.find((c) => c.rule === rule)!;
 
 describe('eligibility (BR-09)', () => {
-  it('passes when every condition holds and reports all four checks in order', () => {
+  it('passes when every condition holds and reports all five checks in order', () => {
     const r = eligibility(ok, t);
     expect(r.eligible).toBe(true);
     expect(r.checks.map((c) => c.rule)).toEqual([
       'ATTENDANCE',
+      'SESSIONS_RECORDED',
       'MANDATORY_ASSESSMENTS',
       'AGGREGATE',
       'RECOMMENDATION',
@@ -40,6 +42,17 @@ describe('eligibility (BR-09)', () => {
 
   it('no conducted sessions (null attendance) fails', () => {
     expect(check({ attendancePercent: null }, 'ATTENDANCE').passed).toBe(false);
+  });
+
+  it('L2: one session that ended without being marked fails; none passes', () => {
+    expect(check({ unrecordedSessions: 1 }, 'SESSIONS_RECORDED')).toEqual({
+      rule: 'SESSIONS_RECORDED',
+      passed: false,
+      actual: 1,
+      required: 0,
+    });
+    expect(eligibility({ ...ok, unrecordedSessions: 1 }, t).eligible).toBe(false);
+    expect(check({ unrecordedSessions: 0 }, 'SESSIONS_RECORDED').passed).toBe(true);
   });
 
   it('aggregate 39.99 % fails and 40.00 % passes', () => {
@@ -68,6 +81,7 @@ describe('eligibility (BR-09)', () => {
     const r = eligibility(
       {
         attendancePercent: 50,
+        unrecordedSessions: 2,
         mandatoryTotal: 1,
         mandatoryRecorded: 0,
         aggregate: 10,

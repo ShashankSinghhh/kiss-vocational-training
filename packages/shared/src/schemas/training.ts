@@ -62,6 +62,8 @@ export interface AttendanceFigures {
   percent: number | null;
   absences: number;
   consecutiveAbsences: number;
+  /** Sessions that have ended while the student was in the batch but were never marked (L2). */
+  unrecorded: number;
 }
 
 export interface BatchAttendanceRow extends AttendanceFigures {

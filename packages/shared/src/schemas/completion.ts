@@ -8,9 +8,13 @@ import {
 
 // ─── Completion (F7: BRQ-7.1, BRQ-9.4, BR-09) ──────────────────────────────────
 
-/** The four BR-09 conditions, in the order they are shown. */
+/**
+ * The four BR-09 conditions in the order they are shown, plus SESSIONS_RECORDED: attendance is
+ * only meaningful once every session that has ended was marked (L2).
+ */
 export const ELIGIBILITY_RULES = [
   'ATTENDANCE',
+  'SESSIONS_RECORDED',
   'MANDATORY_ASSESSMENTS',
   'AGGREGATE',
   'RECOMMENDATION',
@@ -20,9 +24,9 @@ export type EligibilityRule = (typeof ELIGIBILITY_RULES)[number];
 export interface EligibilityCheck {
   rule: EligibilityRule;
   passed: boolean;
-  /** Attendance/aggregate: percent or null if none yet. Mandatory: recorded count. Recommendation: true/false/null. */
+  /** Attendance/aggregate: percent or null if none yet. Mandatory: recorded count. Sessions: unrecorded count. Recommendation: true/false/null. */
   actual: number | boolean | null;
-  /** Attendance/aggregate: minimum percent. Mandatory: number of mandatory assessments. Recommendation: true. */
+  /** Attendance/aggregate: minimum percent. Mandatory: number of mandatory assessments. Sessions: 0. Recommendation: true. */
   required: number | boolean;
   /** Mandatory: titles of the mandatory assessments with no marks yet for this student. */
   missing?: string[];

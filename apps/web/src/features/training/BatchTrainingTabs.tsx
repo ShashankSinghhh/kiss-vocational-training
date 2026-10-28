@@ -61,6 +61,14 @@ export function AttendanceSummaryTab({ batchId }: { batchId: string }) {
       align: 'right',
       render: (r) => r.consecutiveAbsences,
     },
+    // L2: sessions that ended unmarked are left out of the percentage, so show them beside it.
+    {
+      key: 'unrecorded',
+      header: t('summary.unrecorded'),
+      align: 'right',
+      render: (r) =>
+        r.unrecorded > 0 ? <span className="font-medium text-red-800">{r.unrecorded}</span> : 0,
+    },
   ];
   return (
     <Table

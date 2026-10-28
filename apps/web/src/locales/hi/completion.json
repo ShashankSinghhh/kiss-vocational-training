@@ -42,6 +42,7 @@
   },
   "rule": {
     "ATTENDANCE": "उपस्थिति {{actual}} (न्यूनतम {{required}} %)",
+    "SESSIONS_RECORDED": "अभी तक दर्ज न हुए सत्र: {{actual}}",
     "MANDATORY_ASSESSMENTS": "दर्ज अनिवार्य मूल्यांकन: {{required}} में से {{actual}}",
     "AGGREGATE": "कुल अंक {{actual}} (न्यूनतम {{required}} %)",
     "RECOMMENDATION": "प्रशिक्षक की सिफ़ारिश: {{actual}}",
@@ -55,6 +56,7 @@
   },
   "ruleShort": {
     "ATTENDANCE": "उपस्थिति न्यूनतम से कम",
+    "SESSIONS_RECORDED": "कुछ सत्रों की उपस्थिति दर्ज नहीं हुई",
     "MANDATORY_ASSESSMENTS": "अनिवार्य मूल्यांकन बाकी",
     "AGGREGATE": "कुल अंक न्यूनतम से कम",
     "RECOMMENDATION": "प्रशिक्षक ने सिफ़ारिश नहीं की"

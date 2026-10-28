@@ -1,4 +1,4 @@
-import type { AllocationPriorityRule } from '@vtmp/shared';
+import type { AllocationPriorityRule, BatchStatus } from '@vtmp/shared';
 
 export interface Applicant {
   enrollmentId: string;
@@ -175,4 +175,22 @@ export function capacityLevel(
   const percent = capacity > 0 ? Math.round((projected * 10_000) / capacity) / 100 : 100;
   const level = projected > capacity ? 'OVER' : percent >= warnAtPercent ? 'NEAR' : 'OK';
   return { percent, level };
+}
+
+export type CloseBlocker = 'INVALID_BATCH_STATUS' | 'BATCH_NOT_ENDED' | 'STUDENTS_UNDECIDED';
+
+/**
+ * L1: a running batch may be closed from the day after its end date, once no student is still
+ * waiting for a completion decision. Dates are institution calendar days (YYYY-MM-DD).
+ */
+export function closeBlocker(
+  status: BatchStatus,
+  endDate: string,
+  today: string,
+  undecided: number,
+): CloseBlocker | null {
+  if (status !== 'ACTIVE') return 'INVALID_BATCH_STATUS';
+  if (today <= endDate) return 'BATCH_NOT_ENDED';
+  if (undecided > 0) return 'STUDENTS_UNDECIDED';
+  return null;
 }

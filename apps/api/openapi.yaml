@@ -842,6 +842,18 @@ paths:
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         { '200': { description: Active }, '409': { $ref: '#/components/responses/Conflict' } }
+  /admin/batches/{batchId}/close:
+    post:
+      tags: [admin-batches]
+      summary: ACTIVE → CLOSED after the end date, once every student has a completion decision
+      description: >-
+        409 INVALID_BATCH_STATUS (not active), BATCH_NOT_ENDED (end date not passed) or
+        STUDENTS_UNDECIDED (details list each student still in training).
+      parameters:
+        - { name: batchId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        { '200': { description: Closed }, '409': { $ref: '#/components/responses/Conflict' } }
   /admin/batches/{batchId}/candidates:
     get:
       tags: [admin-batches]
@@ -899,6 +911,30 @@ paths:
           '200': { description: Target batch detail },
           '409': { $ref: '#/components/responses/Conflict' },
         }
+  /admin/batches/{batchId}/students/{enrollmentId}/withdraw:
+    post:
+      tags: [admin-batches]
+      summary: Withdraw a student from a planned or running batch (application → WITHDRAWN)
+      description: >-
+        From a planned batch the seat is freed and the student leaves the roster. From an active
+        batch the student stays on the roster with status WITHDRAWN (attendance and marks kept)
+        but no longer holds a seat and is left off attendance sheets, mark entry and risk checks.
+      parameters:
+        - { name: batchId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: enrollmentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              {
+                type: object,
+                required: [reason],
+                properties: { reason: { type: string, minLength: 3, maxLength: 500 } },
+              }
+      responses:
+        { '200': { description: Batch detail }, '409': { $ref: '#/components/responses/Conflict' } }
   /admin/batches/{batchId}/trainers:
     post:
       tags: [admin-batches]
@@ -1085,7 +1121,7 @@ paths:
   /batches/{batchId}/attendance-summary:
     get:
       tags: [attendance]
-      summary: Per-student attendance % (two decimals), absences, consecutive absences (BRQ-5.3)
+      summary: Per-student attendance % (two decimals), absences, consecutive absences, sessions ended but never marked (BRQ-5.3, L2); students who withdrew are left out
       parameters:
         - { name: batchId, in: path, required: true, schema: { type: string, format: uuid } }
       responses: { '200': { description: Rows } }
@@ -2572,7 +2608,11 @@ components:
     EligibilityCheck:
       type: object
       properties:
-        rule: { type: string, enum: [ATTENDANCE, MANDATORY_ASSESSMENTS, AGGREGATE, RECOMMENDATION] }
+        rule:
+          {
+            type: string,
+            enum: [ATTENDANCE, SESSIONS_RECORDED, MANDATORY_ASSESSMENTS, AGGREGATE, RECOMMENDATION],
+          }
         passed: { type: boolean }
         actual: { anyOf: [{ type: number, nullable: true }, { type: boolean }] }
         required: { oneOf: [{ type: number }, { type: boolean }] }

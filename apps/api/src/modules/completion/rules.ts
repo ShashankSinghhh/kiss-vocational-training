@@ -3,6 +3,8 @@ import type { Eligibility, EligibilityCheck } from '@vtmp/shared';
 export interface CompletionFacts {
   /** Two decimals (BR-08); null when no session has been conducted. */
   attendancePercent: number | null;
+  /** Sessions that ended while the student was in the batch but were never marked (L2). */
+  unrecordedSessions: number;
   mandatoryTotal: number;
   mandatoryRecorded: number;
   /** Titles of the mandatory assessments still without marks (shown to the admin, T1). */
@@ -22,6 +24,8 @@ export interface CompletionThresholds {
  * BR-09: a student may complete only with attendance ≥ minimum, every mandatory assessment
  * recorded, aggregate ≥ minimum and a trainer recommendation. Every check is reported, passed
  * or not, so the admin sees all the reasons at once (BRQ-9.4). Bounds are inclusive.
+ * L2: unmarked sessions leave the attendance total, so they would overstate the percentage;
+ * completion waits until every session that has ended is marked (or cancelled).
  */
 export function eligibility(facts: CompletionFacts, t: CompletionThresholds): Eligibility {
   const checks: EligibilityCheck[] = [
@@ -30,6 +34,12 @@ export function eligibility(facts: CompletionFacts, t: CompletionThresholds): El
       passed: facts.attendancePercent !== null && facts.attendancePercent >= t.minAttendancePercent,
       actual: facts.attendancePercent,
       required: t.minAttendancePercent,
+    },
+    {
+      rule: 'SESSIONS_RECORDED',
+      passed: facts.unrecordedSessions === 0,
+      actual: facts.unrecordedSessions,
+      required: 0,
     },
     {
       rule: 'MANDATORY_ASSESSMENTS',

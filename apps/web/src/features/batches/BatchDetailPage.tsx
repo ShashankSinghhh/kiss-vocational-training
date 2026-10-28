@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { BatchDetail, Candidate, RosterEntry } from '@vtmp/shared';
@@ -26,12 +26,14 @@ import {
   useBatch,
   useCancelSession,
   useCandidates,
+  useCloseBatch,
   useMoveStudent,
   usePlaceStudent,
   useRemoveStudent,
   useSessions,
   useTrainers,
   useUnassignTrainer,
+  useWithdrawStudent,
 } from './api';
 import { BatchStatusBadge, FillBar } from './bits';
 import { BatchFormModal, ScheduleModal } from './forms';
@@ -56,6 +58,7 @@ export function BatchDetailPage({ admin }: { admin: boolean }) {
   const [tab, setTab] = useState('students');
   const [editing, setEditing] = useState(false);
   const [activating, setActivating] = useState(false);
+  const [closing, setClosing] = useState(false);
   const courses = useAdminCourses(admin);
   const back = admin ? '/admin/batches' : '/trainer/batches';
 
@@ -101,6 +104,11 @@ export function BatchDetailPage({ admin }: { admin: boolean }) {
             )}
             {b.status === 'PLANNED' && (
               <Button onClick={() => setActivating(true)}>{t('detail.activate')}</Button>
+            )}
+            {b.status === 'ACTIVE' && (
+              <Button variant="secondary" onClick={() => setClosing(true)}>
+                {t('detail.close')}
+              </Button>
             )}
             {b.status !== 'PLANNED' && (
               <Link
@@ -204,7 +212,94 @@ export function BatchDetailPage({ admin }: { admin: boolean }) {
       >
         <p className="text-sm text-slate-700">{t('detail.activateBody')}</p>
       </Modal>
+      {admin && <CloseModal batch={b} open={closing} onClose={() => setClosing(false)} />}
     </div>
+  );
+}
+
+/** Students still waiting for a completion decision keep a batch from closing (L1). */
+const UNDECIDED = ['ALLOCATED', 'ACTIVE'];
+
+/**
+ * L1: closing ends a batch for good. The API checks the end date and decisions; this dialog
+ * shows the same facts first so the admin knows what is left to do.
+ */
+function CloseModal({
+  batch,
+  open,
+  onClose,
+}: {
+  batch: BatchDetail;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation('batches');
+  const toast = useToast();
+  const errorMessage = useErrorMessage();
+  const close = useCloseBatch();
+  const undecided = (batch.roster ?? []).filter((r) => UNDECIDED.includes(r.enrollmentStatus));
+  // The device's calendar day (YYYY-MM-DD); the API decides with the institution's.
+  const notEnded = new Date().toLocaleDateString('en-CA') <= batch.endDate;
+
+  const submit = async () => {
+    try {
+      await close.mutateAsync(batch.id);
+      toast.show({ tone: 'success', title: t('detail.closed') });
+      onClose();
+    } catch (err) {
+      toast.show({ tone: 'error', title: errorMessage(err) });
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={t('detail.closeTitle', { name: batch.name })}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t('form.cancel')}
+          </Button>
+          <Button
+            loading={close.isPending}
+            disabled={undecided.length > 0 || notEnded}
+            onClick={() => void submit()}
+          >
+            {t('detail.close')}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3 text-sm text-slate-700">
+        <p>{t('detail.closeBody')}</p>
+        {notEnded && (
+          <p className="text-amber-900">
+            {t('detail.closeNotEnded', {
+              date: formatDay(batch.endDate, i18n.resolvedLanguage ?? 'en'),
+            })}
+          </p>
+        )}
+        {undecided.length > 0 && (
+          <div>
+            <p className="text-amber-900">
+              {t('detail.closeUndecided', { count: undecided.length })}
+            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {undecided.map((r) => (
+                <li key={r.enrollmentId}>{`${r.fullName} (${r.rollNo})`}</li>
+              ))}
+            </ul>
+            <Link
+              to={`/admin/completions?batch=${batch.id}`}
+              className="mt-2 inline-block font-medium text-brand-700 underline hover:text-brand-900"
+            >
+              {t('detail.closeGoToCompletion')}
+            </Link>
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 
@@ -216,6 +311,7 @@ function StudentsTab({ batch, admin }: { batch: BatchDetail; admin: boolean }) {
   const place = usePlaceStudent();
   const candidates = useCandidates(batch.id, admin && batch.status !== 'CLOSED');
   const [moving, setMoving] = useState<RosterEntry | null>(null);
+  const [withdrawing, setWithdrawing] = useState<RosterEntry | null>(null);
   const full = batch.enrolled >= batch.capacity;
 
   const act = async (fn: () => Promise<unknown>, message: string) => {
@@ -249,14 +345,26 @@ function StudentsTab({ batch, admin }: { batch: BatchDetail; admin: boolean }) {
             align: 'right' as const,
             render: (r: RosterEntry) => (
               <div className="flex justify-end gap-1">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setMoving(r)}
-                  aria-label={t('students.moveFor', { name: r.fullName })}
-                >
-                  {t('students.move')}
-                </Button>
+                {batch.status !== 'CLOSED' && UNDECIDED.includes(r.enrollmentStatus) && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setMoving(r)}
+                      aria-label={t('students.moveFor', { name: r.fullName })}
+                    >
+                      {t('students.move')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setWithdrawing(r)}
+                      aria-label={t('students.withdrawFor', { name: r.fullName })}
+                    >
+                      {t('students.withdraw')}
+                    </Button>
+                  </>
+                )}
                 {batch.status === 'PLANNED' && (
                   <Button
                     size="sm"
@@ -337,7 +445,95 @@ function StudentsTab({ batch, admin }: { batch: BatchDetail; admin: boolean }) {
         </Card>
       )}
       {admin && <MoveModal batch={batch} student={moving} onClose={() => setMoving(null)} />}
+      {admin && (
+        <WithdrawModal batch={batch} student={withdrawing} onClose={() => setWithdrawing(null)} />
+      )}
     </div>
+  );
+}
+
+/** L4: a student leaves training; the reason is kept on the application and sent to them. */
+function WithdrawModal({
+  batch,
+  student,
+  onClose,
+}: {
+  batch: BatchDetail;
+  student: RosterEntry | null;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation('batches');
+  const toast = useToast();
+  const errorMessage = useErrorMessage();
+  const withdraw = useWithdrawStudent();
+  const [reason, setReason] = useState('');
+  const [invalid, setInvalid] = useState(false);
+  const id = useId();
+
+  const dismiss = () => {
+    setReason('');
+    setInvalid(false);
+    onClose();
+  };
+  const submit = async () => {
+    if (!student) return;
+    if (reason.trim().length < 3) return setInvalid(true);
+    try {
+      await withdraw.mutateAsync({
+        batchId: batch.id,
+        enrollmentId: student.enrollmentId,
+        reason: reason.trim(),
+      });
+      toast.show({ tone: 'success', title: t('students.withdrawn', { name: student.fullName }) });
+      dismiss();
+    } catch (err) {
+      toast.show({ tone: 'error', title: errorMessage(err) });
+    }
+  };
+
+  return (
+    <Modal
+      open={!!student}
+      onClose={dismiss}
+      title={student ? t('students.withdrawTitle', { name: student.fullName }) : ''}
+      footer={
+        <>
+          <Button variant="secondary" onClick={dismiss}>
+            {t('form.cancel')}
+          </Button>
+          <Button variant="danger" loading={withdraw.isPending} onClick={() => void submit()}>
+            {t('students.withdraw')}
+          </Button>
+        </>
+      }
+    >
+      <p className="mb-3 text-sm text-slate-700">
+        {batch.status === 'ACTIVE'
+          ? t('students.withdrawBodyActive')
+          : t('students.withdrawBodyPlanned')}
+      </p>
+      <label htmlFor={id} className="text-sm font-medium text-slate-800">
+        {t('students.withdrawReason')}
+      </label>
+      <p id={`${id}-hint`} className="text-xs text-slate-600">
+        {t('students.withdrawHint')}
+      </p>
+      <textarea
+        id={id}
+        rows={3}
+        maxLength={500}
+        value={reason}
+        aria-invalid={invalid || undefined}
+        aria-describedby={`${id}-hint${invalid ? ` ${id}-err` : ''}`}
+        onChange={(e) => setReason(e.target.value)}
+        className="mt-1 w-full rounded-md border border-slate-400 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+      />
+      {invalid && (
+        <p id={`${id}-err`} className="mt-1 text-xs text-red-700">
+          {t('students.withdrawReasonRequired')}
+        </p>
+      )}
+    </Modal>
   );
 }
 

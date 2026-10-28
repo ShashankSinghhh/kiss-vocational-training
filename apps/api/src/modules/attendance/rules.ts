@@ -31,11 +31,13 @@ export function consecutiveAbsences(
 
 /**
  * Figures for one student from their marks on conducted sessions, newest first. Sessions they
- * have no mark for (e.g. held before they joined the batch) are not counted.
+ * have no mark for (e.g. held before they joined the batch) are not counted. `unrecorded` is
+ * passed through: sessions that ended but were never marked are reported, not guessed (L2).
  */
 export function attendanceFigures(
   newestFirst: readonly AttendanceStatus[],
   lateCountsAsPresent: boolean,
+  unrecorded = 0,
 ): AttendanceFigures {
   const attended = newestFirst.filter((s) => isAttended(s, lateCountsAsPresent)).length;
   return {
@@ -44,6 +46,7 @@ export function attendanceFigures(
     percent: attendancePercent(attended, newestFirst.length),
     absences: newestFirst.filter((s) => s === 'ABSENT').length,
     consecutiveAbsences: consecutiveAbsences(newestFirst, lateCountsAsPresent),
+    unrecorded,
   };
 }
 

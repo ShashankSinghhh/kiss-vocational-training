@@ -102,6 +102,7 @@
     "conducted": "Conducted",
     "absences": "Absences",
     "consecutive": "Absent in a row",
+    "unrecorded": "Not marked",
     "none": "—",
     "belowMin": "Below {{min}} %"
   },

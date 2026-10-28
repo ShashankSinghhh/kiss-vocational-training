@@ -102,6 +102,7 @@
     "conducted": "आयोजित",
     "absences": "अनुपस्थिति",
     "consecutive": "लगातार अनुपस्थित",
+    "unrecorded": "दर्ज नहीं",
     "none": "—",
     "belowMin": "{{min}} % से कम"
   },
