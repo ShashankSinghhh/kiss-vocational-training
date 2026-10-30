@@ -46,8 +46,11 @@ export interface AttendanceSheet {
   }>;
   /** Null until the first save. */
   firstMarkedAt: string | null;
-  /** When the trainer edit window closes (null before the first save). */
-  editableUntil: string | null;
+  /**
+   * When the trainer edit window closes: 48 h after the first save, or after the session's
+   * end if that comes first (L3), so an unmarked session has a deadline too.
+   */
+  editableUntil: string;
   canEdit: boolean;
   /** True when an edit is allowed only for an admin with a reason. */
   requiresReason: boolean;

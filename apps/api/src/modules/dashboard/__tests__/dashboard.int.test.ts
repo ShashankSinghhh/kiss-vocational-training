@@ -63,6 +63,28 @@ describe('dashboards (BRQ-9.1–9.3)', () => {
     expect(d.minAttendancePercent).toBe(75);
   });
 
+  it('admin: L8 lists running batches past their end date, with students still undecided', async () => {
+    const w = await createTrainedBatch(prisma(), [
+      { attended: 4, marks: 45, recommended: true },
+      { attended: 1 },
+    ]);
+    const A = await approve(w.students[0]!.enrollmentId);
+    const ended = async () => {
+      const res = await request(app).get('/api/v1/dashboard/admin').set(A);
+      return (res.body.endedBatches as Array<{ batchId: string; undecided: number }>).find(
+        (b) => b.batchId === w.batch.id,
+      );
+    };
+    // Still running: not listed.
+    expect(await ended()).toBeUndefined();
+    await prisma().batch.update({
+      where: { id: w.batch.id },
+      data: { endDate: new Date(Date.now() - 3 * 86_400_000) },
+    });
+    // One certified, one still in training.
+    expect(await ended()).toMatchObject({ undecided: 1 });
+  });
+
   it('trainer: active batches, pending attendance and students below the minimum', async () => {
     const db = prisma();
     const w = await createTrainedBatch(db, [{ attended: 4 }, { attended: 1 }]);

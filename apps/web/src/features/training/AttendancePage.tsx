@@ -118,9 +118,9 @@ export function AttendancePage({
           {t('sheet.override')}
         </p>
       )}
-      {!s.lockedReason && s.editableUntil && (
+      {!s.lockedReason && (
         <p className="text-sm text-slate-700">
-          {t('sheet.editableFor', {
+          {t(s.firstMarkedAt ? 'sheet.editableFor' : 'sheet.markBy', {
             when: formatDate(s.editableUntil, lng, true),
             relative: relativeTime(s.editableUntil, lng),
           })}

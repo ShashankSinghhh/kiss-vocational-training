@@ -53,7 +53,8 @@ async function rawMaterial(request: APIRequestContext) {
         cycleId: cycle.id,
         name: 'Gate batch',
         capacity: 3,
-        startDate: day(-3),
+        // Yesterday only: its session is inside the trainer's 48 h window (L3).
+        startDate: day(-1),
         endDate: day(-1),
         venue: `Workshop G ${s}`,
       },
@@ -136,6 +137,12 @@ test.describe('GATE 1: Release 1 workflow end to end', () => {
     await page.reload();
     await page.getByRole('tab', { name: 'Sessions' }).click();
     await page.getByRole('button', { name: 'Schedule sessions' }).click();
+    // The default days are Mon/Wed/Fri; make sure yesterday is one of them.
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    await page
+      .getByRole('dialog')
+      .getByLabel(weekdays[new Date(Date.now() - 86_400_000).getUTCDay()]!, { exact: true })
+      .check();
     await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
     await toast(page, /sessions? scheduled/);
     await page.getByRole('button', { name: 'Activate batch' }).click();

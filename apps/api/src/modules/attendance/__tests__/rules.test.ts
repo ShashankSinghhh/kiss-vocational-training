@@ -65,18 +65,29 @@ describe('isAttended / consecutiveAbsences', () => {
   });
 });
 
-describe('editWindow (BR-06, BRQ-5.2)', () => {
+describe('editWindow (BR-06, BRQ-5.2, L3)', () => {
   const first = new Date('2027-01-05T10:00:00Z');
   const at = (minutes: number) => new Date(first.getTime() + minutes * 60_000);
+  // The session ends an hour after the first marking.
+  const ends = at(60);
 
-  it('is open at 47h59 and closed at 48h00 and 48h01', () => {
-    expect(editWindow(first, at(47 * 60 + 59), 48).open).toBe(true);
-    expect(editWindow(first, at(48 * 60), 48).open).toBe(false);
-    expect(editWindow(first, at(48 * 60 + 1), 48).open).toBe(false);
-    expect(editWindow(first, at(0), 48).until).toEqual(at(48 * 60));
+  it('is open at 47h59 and closed at 48h00 and 48h01 after the first marking', () => {
+    expect(editWindow(first, ends, at(47 * 60 + 59), 48).open).toBe(true);
+    expect(editWindow(first, ends, at(48 * 60), 48).open).toBe(false);
+    expect(editWindow(first, ends, at(48 * 60 + 1), 48).open).toBe(false);
+    expect(editWindow(first, ends, at(0), 48).until).toEqual(at(48 * 60));
   });
 
-  it('is open before the first marking', () => {
-    expect(editWindow(null, at(10_000), 48)).toEqual({ open: true, until: null });
+  it('L3: an unmarked session closes 48 h after it ended', () => {
+    expect(editWindow(null, ends, at(60 + 47 * 60 + 59), 48).open).toBe(true);
+    expect(editWindow(null, ends, at(60 + 48 * 60), 48)).toEqual({
+      open: false,
+      until: at(60 + 48 * 60),
+    });
+  });
+
+  it('L3: marking late does not restart the window', () => {
+    const late = at(60 + 40 * 60);
+    expect(editWindow(late, ends, at(60 + 48 * 60), 48).open).toBe(false);
   });
 });

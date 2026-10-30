@@ -272,6 +272,50 @@ project rule (both below).
 
 ---
 
+## After Sprint 13 — Round 2 medium-severity fixes: deadlines and dates (2026-10-30)
+
+The four medium-severity items from the Round 2 review. No migration.
+
+### Built
+- **L3 Marking deadline:** the 48-hour trainer window now starts at the first marking or at
+  the session's end, whichever comes first (`editWindow(firstMarkedAt, endsAt, …)`). Before, a
+  session nobody marked had no deadline, so the window could be dodged by marking late. The
+  sheet always carries `editableUntil`; an unmarked one says "Mark this session by …". Admins
+  can still mark later, with a reason, as before.
+- **L5 Batch dates:** a batch must start and end inside its cycle (422 `BATCH_OUTSIDE_CYCLE`,
+  pure rule `insideCycle`), on create and on edit. A cycle can't be re-dated past its batches
+  (409 `CYCLE_HAS_BATCHES_OUTSIDE`, naming them; `batches.batchesOutsideDates`, passed in by the
+  controller like the other batch figures).
+- **L6 Application windows:** a window must close by the end of the cycle's last day,
+  institution time (422 `WINDOW_AFTER_CYCLE`, pure rules `cycleEndInstant` /
+  `windowInsideCycle`), and a cycle can't be shortened before an open window closes (409
+  `CYCLE_HAS_WINDOWS_OUTSIDE`).
+- **L8 Ended batches:** the admin dashboard's *Training over: still open* card lists active
+  batches past their end date, oldest first, with the students still waiting for a decision
+  (link to Completions) or *Ready to close* (link to the batch). `AdminDashboard.endedBatches`
+  from `batches.endedActive`.
+- Tests: +10 API tests (new `courses/__tests__/cycle-dates.int.test.ts`, rule tests for the
+  window, cycle bounds and edit window, dashboard). The integration fixture now spaces its past
+  sessions three hours apart (was one day), so they are inside the 48-hour window. The Gate 1
+  e2e batch now runs yesterday only (was the last three days), for the same reason.
+
+### Deviations from BRD/TAD (and why)
+- BR-06 says the window runs 48 h from the first marking. It still does when the session is
+  marked on time; for a session not marked by its end the 48 h start at the end.
+- The report suggested windows close before the cycle starts. They may stay open into a
+  running cycle, because the portal places late applicants in active batches (BRQ-4.4); only
+  closing after the cycle has ended is refused.
+
+### Known gaps / follow-ups
+- L7 (cycles with no open window shown to students) is the one Round 2 item left, low.
+- The ended-batches card is a list, not a reminder: nothing is sent (A3 in the report).
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (already inside the
+  rules) · [x] strings externalized (en, hi, or)
+
+---
+
 ## After Sprint 13 — Round 2 high-severity fixes: closing, unmarked sessions, dropouts (2026-10-28)
 
 The three high-severity items from the Round 2 review ("logic that doesn't make sense"). No

@@ -132,7 +132,9 @@ Your batches, today's sessions and students who need attention.
 
 1. Press **Mark all present**, then change anyone who is late or absent.
 2. **Save attendance.** You can change it for 48 hours; after that only an admin can, with a
-   reason, and the change is logged.
+   reason, and the change is logged. The 48 hours start when you first save, or when the
+   session ends if you haven't saved by then: a session you never mark closes to you 48 hours
+   after it ended, and the sheet says by when to mark it.
 
 A student whose account was deactivated, or who was withdrawn from the training, is no longer
 on new attendance sheets; sessions already marked keep their mark.
@@ -223,7 +225,9 @@ no record ever loses its student, trainer or course.
    (the student sees it). Before the batch starts the seat is simply freed. Once training has
    started the student stays on the list as *Withdrawn*, with their attendance and marks so far,
    but leaves attendance sheets, mark entry and risk checks, and the seat is freed.
-5. **Training is over**: once every student has a decision on **Completions** (completed, not
+5. **Training is over**: the dashboard's *Training over: still open* card lists every running
+   batch past its end date, with how many students still need a decision (a link to
+   Completions) or *Ready to close*. Once every student has a decision on **Completions** (completed, not
    completed or withdrawn), press **Close batch** on the batch, from the day after its end
    date. A closed batch takes no more attendance, marks, sessions or students and leaves the
    lists of active batches; everything recorded stays readable.
@@ -302,6 +306,8 @@ shown.
 | New password refused | Use at least 8 characters with at least one letter and one digit. |
 | Can't edit attendance | The 48-hour window has passed: ask an admin to correct it. |
 | Not eligible to complete | The Completions page shows which rule fails (attendance, sessions not marked yet, missing assessment by name, aggregate, recommendation). |
+| "The batch must run within its training cycle's dates" | Batches start and end inside their cycle. Change the batch dates, or the cycle's first (a cycle can't be shortened past its batches or open application windows). |
+| "Applications must close by the end of the training cycle" | Set the window to close on or before the cycle's last day. |
 | *Close batch* is greyed out | The end date hasn't passed yet, or the dialog lists students who still need a decision on **Completions**. |
 | Sent to *Change password* at sign-in | The training office set your password: type it as the current password and choose your own. |
 | A shared passport link stopped working | It expired or the student revoked it: ask for a new link. |

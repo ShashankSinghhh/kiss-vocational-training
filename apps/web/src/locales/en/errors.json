@@ -126,6 +126,10 @@
     "ASSISTANT_UNAVAILABLE": "The assistant is busy right now. Try again in a minute.",
     "NO_TEXT": "No text could be read from this file. Upload a PDF with selectable text or a text file.",
     "NOT_PENDING": "Only materials waiting for review can be approved or rejected.",
-    "COURSE_NOT_FOUND": "Choose an existing course."
+    "COURSE_NOT_FOUND": "Choose an existing course.",
+    "BATCH_OUTSIDE_CYCLE": "The batch must run within its training cycle's dates.",
+    "WINDOW_AFTER_CYCLE": "Applications must close by the end of the training cycle.",
+    "CYCLE_HAS_BATCHES_OUTSIDE": "Some batches would run outside the new dates. Change their dates first.",
+    "CYCLE_HAS_WINDOWS_OUTSIDE": "Some application windows would close after the new end date. Change them first."
   }
 }

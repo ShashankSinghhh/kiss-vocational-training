@@ -194,3 +194,14 @@ export function closeBlocker(
   if (undecided > 0) return 'STUDENTS_UNDECIDED';
   return null;
 }
+
+/**
+ * L5: a batch runs inside its training cycle (both dates inclusive). Calendar days as
+ * YYYY-MM-DD, so plain string comparison is a date comparison.
+ */
+export function insideCycle(
+  batch: { startDate: string; endDate: string },
+  cycle: { startsOn: string; endsOn: string },
+): boolean {
+  return batch.startDate >= cycle.startsOn && batch.endDate <= cycle.endsOn;
+}

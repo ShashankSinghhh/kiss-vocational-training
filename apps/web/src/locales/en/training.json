@@ -34,6 +34,7 @@
     "statusFor": "Attendance for {{name}}",
     "counts": "Present {{present}} · Late {{late}} · Absent {{absent}} · Not marked {{unmarked}}",
     "editableFor": "You can change this attendance until {{when}} ({{relative}}).",
+    "markBy": "Mark this session by {{when}} ({{relative}}). After that only an administrator can, with a reason.",
     "locked": {
       "NOT_STARTED": "Attendance opens when the session starts.",
       "CANCELLED": "This session was cancelled.",

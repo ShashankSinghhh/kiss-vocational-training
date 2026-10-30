@@ -15,7 +15,8 @@ import type {
 import { withAudit, type Actor } from '../../core/audit';
 import { prisma } from '../../core/db';
 import { AppError } from '../../core/errors';
-import { isWindowOpen, windowState } from './rules';
+import { settings } from '../../core/settings';
+import { cycleEndInstant, isWindowOpen, windowInsideCycle, windowState } from './rules';
 
 type OfferingRow = Prisma.CourseOfferingGetPayload<object>;
 type CourseRow = Prisma.CourseGetPayload<object>;
@@ -329,11 +330,16 @@ export async function createCycle(actor: Actor, input: CycleCreateInput): Promis
   }
 }
 
+/** Names of a cycle's batches that would fall outside new cycle dates (from the batches module). */
+export type BatchesOutside = (cycleId: string, startsOn: Date, endsOn: Date) => Promise<string[]>;
+
 export async function updateCycle(
   actor: Actor,
   id: string,
   input: CycleUpdateInput,
+  batchesOutside: BatchesOutside,
 ): Promise<Cycle> {
+  const offset = await settings.get('institution.utcOffsetMinutes');
   try {
     return await withAudit(actor, async (tx, log) => {
       const before = await tx.trainingCycle.findUnique({ where: { id } });
@@ -342,6 +348,26 @@ export async function updateCycle(
       const endsOn = input.endsOn ? new Date(input.endsOn) : before.endsOn;
       if (endsOn < startsOn) {
         throw AppError.unprocessable('INVALID_DATES', 'The cycle must end on or after its start');
+      }
+      // L5 / L6: moving the dates must not leave batches or application windows outside them.
+      const outside = await batchesOutside(id, startsOn, endsOn);
+      if (outside.length) {
+        throw AppError.conflict(
+          'CYCLE_HAS_BATCHES_OUTSIDE',
+          'Some batches would run outside the new cycle dates; change their dates first',
+          outside.map((name) => ({ path: 'batch', message: name })),
+        );
+      }
+      const lateWindows = await tx.courseOffering.findMany({
+        where: { cycleId: id, enrollmentClosesAt: { gt: cycleEndInstant(endsOn, offset) } },
+        select: { course: { select: { title: true } } },
+      });
+      if (lateWindows.length) {
+        throw AppError.conflict(
+          'CYCLE_HAS_WINDOWS_OUTSIDE',
+          'Some application windows would close after the new end date; change them first',
+          lateWindows.map((o) => ({ path: 'offering', message: o.course.title })),
+        );
       }
       const cycle = await tx.trainingCycle.update({
         where: { id },
@@ -385,13 +411,22 @@ export async function upsertOffering(
   courseId: string,
   input: OfferingUpsertInput,
 ): Promise<Offering> {
+  const offset = await settings.get('institution.utcOffsetMinutes');
   return withAudit(actor, async (tx, log) => {
     const [cycle, course] = await Promise.all([
-      tx.trainingCycle.findUnique({ where: { id: cycleId }, select: { id: true } }),
+      tx.trainingCycle.findUnique({ where: { id: cycleId }, select: { endsOn: true } }),
       tx.course.findUnique({ where: { id: courseId }, select: { id: true } }),
     ]);
     if (!cycle) throw AppError.notFound('Training cycle not found');
     if (!course) throw AppError.notFound('Course not found');
+    if (!windowInsideCycle(new Date(input.enrollmentClosesAt), cycle.endsOn, offset)) {
+      const last = cycle.endsOn.toISOString().slice(0, 10);
+      throw AppError.unprocessable(
+        'WINDOW_AFTER_CYCLE',
+        `Applications must close by the end of the cycle (${last})`,
+        [{ path: 'enrollmentClosesAt', message: last }],
+      );
+    }
     const data = {
       enrollmentOpensAt: new Date(input.enrollmentOpensAt),
       enrollmentClosesAt: new Date(input.enrollmentClosesAt),

@@ -52,14 +52,17 @@ export function attendanceFigures(
 
 /**
  * BR-06 / BRQ-5.2: trainers may edit for `hours` after the session was first marked; the
- * closing instant itself is already closed.
+ * closing instant itself is already closed. L3: the window starts at the session's end at the
+ * latest, so a session nobody marks closes `hours` after it ended instead of staying open for
+ * ever. Marking during the session keeps the BR-06 start (the first marking).
  */
 export function editWindow(
   firstMarkedAt: Date | null,
+  endsAt: Date,
   now: Date,
   hours: number,
-): { open: boolean; until: Date | null } {
-  if (!firstMarkedAt) return { open: true, until: null };
-  const until = new Date(firstMarkedAt.getTime() + hours * 3_600_000);
+): { open: boolean; until: Date } {
+  const start = firstMarkedAt && firstMarkedAt < endsAt ? firstMarkedAt : endsAt;
+  const until = new Date(start.getTime() + hours * 3_600_000);
   return { open: now < until, until };
 }

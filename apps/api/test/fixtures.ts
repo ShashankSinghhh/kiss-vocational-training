@@ -205,7 +205,7 @@ export async function createBatch(
 
 /**
  * An ACTIVE batch with an assigned trainer, `students` placed (enrollments ACTIVE, all able to
- * sign in) and `sessions` scheduled in the past, one per day, so attendance can be taken.
+ * sign in) and `sessions` scheduled in the past, a few hours apart, so attendance can be taken.
  */
 export async function createActiveBatch(
   db: PrismaClient,
@@ -247,7 +247,8 @@ export async function createActiveBatch(
   const sessions = [];
   const n = opts.sessions ?? 3;
   for (let i = 0; i < n; i++) {
-    const startsAt = new Date(Date.now() - (n - i) * 86_400_000);
+    // Three hours apart, the last ending an hour ago: all within the 48 h window (L3).
+    const startsAt = new Date(Date.now() - (n - i) * 3 * 3_600_000);
     sessions.push(
       await db.trainingSession.create({
         data: {

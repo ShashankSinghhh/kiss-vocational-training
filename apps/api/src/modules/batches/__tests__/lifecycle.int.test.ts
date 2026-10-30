@@ -11,7 +11,7 @@ import {
   uid,
 } from '../../../../test/fixtures';
 import { bearer, login } from '../../../../test/http';
-import { closeBlocker } from '../rules';
+import { closeBlocker, insideCycle } from '../rules';
 
 const app = createApp();
 let admin: Record<string, string>;
@@ -43,6 +43,15 @@ describe('closeBlocker (L1)', () => {
     expect(closeBlocker('ACTIVE', '2027-01-31', '2027-01-31', 0)).toBe('BATCH_NOT_ENDED');
     expect(closeBlocker('ACTIVE', '2027-01-31', '2027-02-01', 1)).toBe('STUDENTS_UNDECIDED');
     expect(closeBlocker('ACTIVE', '2027-01-31', '2027-02-01', 0)).toBeNull();
+  });
+});
+
+describe('insideCycle (L5)', () => {
+  const cycle = { startsOn: '2027-06-01', endsOn: '2027-09-30' };
+  it('accepts the cycle bounds and refuses a day either side', () => {
+    expect(insideCycle({ startDate: '2027-06-01', endDate: '2027-09-30' }, cycle)).toBe(true);
+    expect(insideCycle({ startDate: '2027-05-31', endDate: '2027-09-30' }, cycle)).toBe(false);
+    expect(insideCycle({ startDate: '2027-06-01', endDate: '2027-10-01' }, cycle)).toBe(false);
   });
 });
 

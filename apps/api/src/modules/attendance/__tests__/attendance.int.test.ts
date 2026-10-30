@@ -166,6 +166,22 @@ describe('48-hour edit window (BR-06, BRQ-5.2)', () => {
     expect(sheet.body).toMatchObject({ canEdit: false, lockedReason: 'WINDOW_CLOSED' });
   });
 
+  it('L3: a session nobody marked closes to the trainer 48 h after it ended', async () => {
+    const w = await world({ students: 1, sessions: 1 });
+    const sid = w.sessions[0]!.id;
+    const endsAt = new Date(Date.now() - (48 * 60 + 1) * 60_000);
+    await prisma().trainingSession.update({
+      where: { id: sid },
+      data: { startsAt: new Date(endsAt.getTime() - 7_200_000), endsAt },
+    });
+    const late = await put(sid, w.trainerAuth, all(w.students));
+    expect(late.status).toBe(409);
+    expect(late.body.error.code).toBe('EDIT_WINDOW_CLOSED');
+    const sheet = await request(app).get(`/api/v1/sessions/${sid}/attendance`).set(w.trainerAuth);
+    expect(sheet.body).toMatchObject({ canEdit: false, lockedReason: 'WINDOW_CLOSED' });
+    expect(new Date(sheet.body.editableUntil).getTime()).toBe(endsAt.getTime() + 48 * 3_600_000);
+  });
+
   it('after the window only an admin may edit, with a reason, logged old → new (TC-12, BRQ-19.1)', async () => {
     const w = await world();
     const sid = w.sessions[0]!.id;

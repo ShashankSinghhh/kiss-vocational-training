@@ -9,7 +9,12 @@ import type {
 } from '@vtmp/shared';
 import { AppError } from '../../core/errors';
 import { asyncHandler } from '../../core/http';
-import { capacityByCourse, liveBatchesByCourse, membersByCourse } from '../batches/batches.service';
+import {
+  batchesOutsideDates,
+  capacityByCourse,
+  liveBatchesByCourse,
+  membersByCourse,
+} from '../batches/batches.service';
 import { approvedFirstChoice } from '../enrollments/enrollments.service';
 import * as service from './courses.service';
 
@@ -76,7 +81,14 @@ export const createCycle = asyncHandler(async (req, res) => {
 });
 
 export const updateCycle = asyncHandler(async (req, res) => {
-  res.json(await service.updateCycle(actor(req), req.params.id!, req.body as CycleUpdateInput));
+  res.json(
+    await service.updateCycle(
+      actor(req),
+      req.params.id!,
+      req.body as CycleUpdateInput,
+      batchesOutsideDates,
+    ),
+  );
 });
 
 export const listOfferings = asyncHandler(async (req, res) => {

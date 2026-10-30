@@ -79,7 +79,7 @@ function firstMarked(s: LoadedSession): Date | null {
  * past the window they may still edit with a reason.
  */
 function access(s: LoadedSession, viewer: Viewer, hours: number, now = new Date()) {
-  const window = editWindow(firstMarked(s), now, hours);
+  const window = editWindow(firstMarked(s), s.endsAt, now, hours);
   let lockedReason: AttendanceSheet['lockedReason'] = null;
   if (s.status === 'CANCELLED') lockedReason = 'CANCELLED';
   else if (s.startsAt > now) lockedReason = 'NOT_STARTED';
@@ -120,7 +120,7 @@ export async function sheet(viewer: Viewer, sessionId: string): Promise<Attendan
       markedAt: marks.get(m.studentId)?.markedAt.toISOString() ?? null,
     })),
     firstMarkedAt: firstMarked(s)?.toISOString() ?? null,
-    editableUntil: a.window.until?.toISOString() ?? null,
+    editableUntil: a.window.until.toISOString(),
     canEdit: a.canEdit,
     requiresReason: a.requiresReason,
     lockedReason: a.lockedReason,

@@ -43,6 +43,19 @@ export interface AdminDashboard {
   attendanceTrend: Array<{ weekStart: string; percent: number | null; marks: number }>;
   /** Setting attendance.minPercent, drawn as the trend's reference line. */
   minAttendancePercent: number;
+  /**
+   * L8: running batches whose end date has passed, oldest first: `undecided` students still
+   * wait for a completion decision; at 0 the batch is ready to close.
+   */
+  endedBatches: EndedBatch[];
+}
+
+export interface EndedBatch {
+  batchId: string;
+  batchName: string;
+  courseTitle: string;
+  endDate: string;
+  undecided: number;
 }
 
 export interface DashboardSession {

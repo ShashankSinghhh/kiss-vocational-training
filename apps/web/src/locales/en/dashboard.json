@@ -86,5 +86,13 @@
     "reportHint": "PDF with your attendance, results and trainer's evaluation.",
     "nextSession": "Next session",
     "noNext": "No upcoming session."
+  },
+  "ended": {
+    "title": "Training over: still open",
+    "none": "No batch is past its end date.",
+    "endedOn": "Ended {{date}}",
+    "decide_one": "{{count}} student needs a decision",
+    "decide_other": "{{count}} students need a decision",
+    "close": "Ready to close"
   }
 }

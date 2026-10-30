@@ -24,16 +24,19 @@ const DAY_MS = 86_400_000;
  * BRQ-9.1, BRQ-9.2: counts, enrollment funnel, completion rate, grades and the weekly
  * attendance trend. Every figure is aggregated in SQL by the module that owns the data.
  */
-export async function admin(cycleId?: string): Promise<AdminDashboard> {
-  const [people, courseCount, batchCounts, funnel, grades, trend, minimum] = await Promise.all([
-    users.activeCounts(),
-    courses.activeCourseCount(),
-    batches.statusCounts(),
-    enrollments.statusCounts(cycleId),
-    documents.gradeDistribution(),
-    attendance.weeklyTrend(TREND_WEEKS),
-    settings.get('attendance.minPercent'),
-  ]);
+export async function admin(cycleId?: string, now = new Date()): Promise<AdminDashboard> {
+  const offset = await settings.get('institution.utcOffsetMinutes');
+  const [people, courseCount, batchCounts, funnel, grades, trend, minimum, ended] =
+    await Promise.all([
+      users.activeCounts(),
+      courses.activeCourseCount(),
+      batches.statusCounts(),
+      enrollments.statusCounts(cycleId),
+      documents.gradeDistribution(),
+      attendance.weeklyTrend(TREND_WEEKS),
+      settings.get('attendance.minPercent'),
+      batches.endedActive(institutionDay(now, offset)),
+    ]);
   const count = (s: (typeof ENROLLMENT_STATUSES)[number]) => funnel.get(s) ?? 0;
   const completed = count('COMPLETED') + count('CERTIFIED');
   const notCompleted = count('NOT_COMPLETED');
@@ -61,6 +64,7 @@ export async function admin(cycleId?: string): Promise<AdminDashboard> {
       marks: w.marks,
     })),
     minAttendancePercent: minimum,
+    endedBatches: ended,
   };
 }
 

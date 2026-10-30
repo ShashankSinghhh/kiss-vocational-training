@@ -1,12 +1,12 @@
 import { Suspense, lazy, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { DashboardSession } from '@vtmp/shared';
+import type { DashboardSession, EndedBatch } from '@vtmp/shared';
 import { Button, Card, EmptyState, Select, Spinner, Table } from '../../components/ui';
 import { useToast } from '../../components/toast';
 import { useErrorMessage } from '../../lib/api/useErrorMessage';
 import { useAuth } from '../../lib/auth';
-import { formatSessionDate, formatSessionTime } from '../../lib/format';
+import { formatDay, formatSessionDate, formatSessionTime } from '../../lib/format';
 import { useAdminCycles } from '../admin-courses/api';
 import { StatusBadge } from '../enrollment/StatusBadge';
 import { EscalationsWidget, MyRiskCard } from '../intervention/Widgets';
@@ -20,6 +20,45 @@ const AdminCharts = lazy(() => import('./AdminCharts').then((m) => ({ default: m
 const pct = (n: number | null, none: string) => (n === null ? none : `${n.toFixed(2)} %`);
 
 /** BRQ-9.1, BRQ-9.2: counts, completion and charts. */
+/**
+ * L8: batches whose training is over but which are still open: decisions to make on
+ * Completions, or nothing left but to close them.
+ */
+function EndedBatchesCard({ batches }: { batches: EndedBatch[] }) {
+  const { t, i18n } = useTranslation('dashboard');
+  const lng = i18n.resolvedLanguage ?? 'en';
+  const link = 'font-medium text-brand-700 underline-offset-2 hover:underline';
+  return (
+    <Card title={t('ended.title')} headingLevel={2} data-testid="ended-batches">
+      {batches.length === 0 ? (
+        <EmptyState title={t('ended.none')} />
+      ) : (
+        <ul className="flex flex-col divide-y divide-slate-100">
+          {batches.map((b) => (
+            <li key={b.batchId} className="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span>
+                <span className="font-medium text-slate-900">{`${b.courseTitle} · ${b.batchName}`}</span>
+                <span className="block text-xs text-slate-600">
+                  {t('ended.endedOn', { date: formatDay(b.endDate, lng) })}
+                </span>
+              </span>
+              {b.undecided > 0 ? (
+                <Link to={`/admin/completions?batch=${b.batchId}`} className={link}>
+                  {t('ended.decide', { count: b.undecided })}
+                </Link>
+              ) : (
+                <Link to={`/admin/batches/${b.batchId}`} className={link}>
+                  {t('ended.close')}
+                </Link>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
 export function AdminHome() {
   const { t, i18n } = useTranslation('dashboard');
   const nf = new Intl.NumberFormat(i18n.resolvedLanguage ?? 'en');
@@ -72,6 +111,7 @@ export function AdminHome() {
         />
       </div>
       <EscalationsWidget />
+      <EndedBatchesCard batches={data.endedBatches} />
       <div className="w-64">
         <Select
           label={t('charts.cycle')}

@@ -504,9 +504,13 @@ paths:
     patch:
       tags: [admin-courses]
       summary: Rename or re-date a cycle (Admin)
+      description: >-
+        409 CYCLE_HAS_BATCHES_OUTSIDE or CYCLE_HAS_WINDOWS_OUTSIDE (details name them) when the
+        new dates would leave a batch or an application window outside the cycle (L5, L6).
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
-      responses: { '200': { description: Updated } }
+      responses:
+        { '200': { description: Updated }, '409': { $ref: '#/components/responses/Conflict' } }
   /admin/cycles/{cycleId}/offerings:
     get:
       tags: [admin-courses]
@@ -518,6 +522,9 @@ paths:
     put:
       tags: [admin-courses]
       summary: Offer a course in a cycle, set its enrollment window and open/close toggle (BRQ-2.3)
+      description: >-
+        422 WINDOW_AFTER_CYCLE when the window closes after the cycle's last day (midnight,
+        institution time, L6). Opening after the cycle has started is allowed.
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: courseId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -807,6 +814,7 @@ paths:
     post:
       tags: [admin-batches]
       summary: Create a batch (Admin)
+      description: 422 BATCH_OUTSIDE_CYCLE unless both dates fall within the cycle (L5).
       requestBody:
         required: true
         content:
@@ -829,6 +837,7 @@ paths:
     patch:
       tags: [admin-batches]
       summary: Update name, capacity (never below enrolled), dates or venue (Admin)
+      description: 422 BATCH_OUTSIDE_CYCLE when new dates leave the cycle (L5).
       parameters:
         - { name: batchId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -1081,7 +1090,10 @@ paths:
     get:
       tags: [attendance]
       summary: Attendance sheet (trainer of the batch or admin)
-      description: Includes canEdit, requiresReason (admin after the window), editableUntil and lockedReason.
+      description: >-
+        Includes canEdit, requiresReason (admin after the window), editableUntil and lockedReason.
+        The trainer window is 48 h from the first marking or from the session's end, whichever
+        comes first (BR-06, L3), so an unmarked session closes too.
       parameters:
         - { name: sessionId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -1483,6 +1495,9 @@ paths:
     get:
       tags: [dashboard]
       summary: Admin figures (BRQ-9.1, BRQ-9.2), aggregated in SQL
+      description: >-
+        endedBatches (L8) lists active batches past their end date with the number of students
+        still waiting for a completion decision (0 = ready to close).
       parameters:
         - {
             name: cycleId,
