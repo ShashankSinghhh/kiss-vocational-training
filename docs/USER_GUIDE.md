@@ -51,8 +51,9 @@ Your application status, attendance, current aggregate and projected grade at a 
 ![Course catalogue](screenshots/student-courses.jpg)
 
 1. On **Courses**, choose a **Training cycle** from the list (nothing is chosen for you; only
-   cycles that offer courses and haven't ended are listed). Its courses appear, with seats and
-   whether applications are open.
+   cycles that offer courses and haven't ended are listed). Each says whether applications are
+   open, opening soon or closed, and the open ones come first. Its courses appear, with seats
+   and whether applications are open.
 2. Open a course for details, then **Apply**. Rank up to three courses in order of
    preference.
 3. **My enrollment** shows your application status (Pending, Approved, Waitlisted, Allocated,

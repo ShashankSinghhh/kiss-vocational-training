@@ -1,4 +1,4 @@
-import type { WindowState } from '@vtmp/shared';
+import type { CycleApplications, WindowState } from '@vtmp/shared';
 
 export interface WindowFacts {
   isOpen: boolean;
@@ -43,3 +43,20 @@ export function windowInsideCycle(
 ): boolean {
   return enrollmentClosesAt <= cycleEndInstant(cycleEndsOn, utcOffsetMinutes);
 }
+
+/**
+ * L7: a cycle takes applications if any of its courses' windows is open, will once one opens,
+ * and is closed otherwise (a running cycle students may still look at).
+ */
+export function cycleApplications(states: readonly WindowState[]): CycleApplications {
+  if (states.includes('OPEN')) return 'OPEN';
+  if (states.includes('UPCOMING')) return 'UPCOMING';
+  return 'CLOSED';
+}
+
+/** L7: open cycles first in the picker, then upcoming, then closed. */
+export const APPLICATIONS_ORDER: Record<CycleApplications, number> = {
+  OPEN: 0,
+  UPCOMING: 1,
+  CLOSED: 2,
+};

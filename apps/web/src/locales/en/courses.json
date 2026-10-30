@@ -16,6 +16,11 @@
     "back": "Back to courses",
     "chooseCycle": "Choose a training cycle",
     "cycleOption": "{{name}} ({{from}} – {{to}})",
+    "applications": {
+      "OPEN": "applications open",
+      "UPCOMING": "applications opening soon",
+      "CLOSED": "applications closed"
+    },
     "pickCycle": "Choose a training cycle to see its courses",
     "pickCycleHint": "Pick the cycle you want to train in from the list above."
   },

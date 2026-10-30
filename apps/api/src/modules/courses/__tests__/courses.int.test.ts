@@ -248,6 +248,40 @@ describe('catalogue (BRQ-2.2)', () => {
     expect(list.body.cycle.id).toBe(open.cycle.id);
   });
 
+  it('L7: says which cycles take applications and lists the open ones first', async () => {
+    const db = prisma();
+    const { auth: S } = await auth(Role.STUDENT);
+    const open = await createOpenCycle(db, 1);
+    const closed = await createOpenCycle(db, 1);
+    await db.courseOffering.updateMany({
+      where: { cycleId: closed.cycle.id },
+      data: { enrollmentClosesAt: new Date(Date.now() - 60_000) },
+    });
+    const soon = await createOpenCycle(db, 1);
+    await db.courseOffering.updateMany({
+      where: { cycleId: soon.cycle.id },
+      data: {
+        enrollmentOpensAt: new Date(Date.now() + 86_400_000),
+        enrollmentClosesAt: new Date(Date.now() + 2 * 86_400_000),
+      },
+    });
+
+    const res = await request(app).get('/api/v1/cycles').set(S).expect(200);
+    const list = res.body as Array<{ id: string; applications: string }>;
+    const at = (id: string) => list.findIndex((c) => c.id === id);
+    expect(list[at(open.cycle.id)]!.applications).toBe('OPEN');
+    expect(list[at(soon.cycle.id)]!.applications).toBe('UPCOMING');
+    expect(list[at(closed.cycle.id)]!.applications).toBe('CLOSED');
+    // Still listed (a student in training there looks at it), but after every open cycle.
+    const states = list.map((c) => c.applications);
+    expect(states).toEqual(
+      [...states].sort(
+        (a, b) =>
+          ['OPEN', 'UPCOMING', 'CLOSED'].indexOf(a) - ['OPEN', 'UPCOMING', 'CLOSED'].indexOf(b),
+      ),
+    );
+  });
+
   it('lists active offered courses with window state and indicative seats remaining', async () => {
     const { cycle, courses } = await createOpenCycle(prisma(), 2);
     await prisma().course.update({ where: { id: courses[1]!.id }, data: { isActive: false } });

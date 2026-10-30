@@ -75,11 +75,13 @@ export function CataloguePage() {
               { value: '', label: t('catalogue.chooseCycle') },
               ...(cycles.data ?? []).map((c) => ({
                 value: c.id,
-                label: t('catalogue.cycleOption', {
+                // L7: say whether the cycle takes applications, so nobody picks a closed one
+                // expecting to apply.
+                label: `${t('catalogue.cycleOption', {
                   name: c.name,
                   from: formatDay(c.startsOn, lng),
                   to: formatDay(c.endsOn, lng),
-                }),
+                })} · ${t(`catalogue.applications.${c.applications}`)}`,
               })),
             ]}
           />

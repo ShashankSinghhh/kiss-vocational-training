@@ -4,6 +4,7 @@ import type {
   BulkStatusInput,
   BulkStatusResult,
   CatalogueCourse,
+  CatalogueCycle,
   CourseCreateInput,
   CourseUpdateInput,
   Cycle,
@@ -16,7 +17,14 @@ import { withAudit, type Actor } from '../../core/audit';
 import { prisma } from '../../core/db';
 import { AppError } from '../../core/errors';
 import { settings } from '../../core/settings';
-import { cycleEndInstant, isWindowOpen, windowInsideCycle, windowState } from './rules';
+import {
+  APPLICATIONS_ORDER,
+  cycleApplications,
+  cycleEndInstant,
+  isWindowOpen,
+  windowInsideCycle,
+  windowState,
+} from './rules';
 
 type OfferingRow = Prisma.CourseOfferingGetPayload<object>;
 type CourseRow = Prisma.CourseGetPayload<object>;
@@ -106,13 +114,21 @@ export async function listCycles(): Promise<Cycle[]> {
  * Cycles a student can choose from on the Courses page (BRQ-2.2): those offering at least one
  * active course that have not ended yet, newest first. Nothing is pre-selected for them.
  */
-export async function catalogueCycles(now = new Date()): Promise<Cycle[]> {
+export async function catalogueCycles(now = new Date()): Promise<CatalogueCycle[]> {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const active = { course: { isActive: true } };
   const cycles = await prisma().trainingCycle.findMany({
-    where: { endsOn: { gte: today }, offerings: { some: { course: { isActive: true } } } },
+    where: { endsOn: { gte: today }, offerings: { some: active } },
     orderBy: { startsOn: 'desc' },
+    include: { offerings: { where: active } },
   });
-  return cycles.map(toCycle);
+  // L7: say which cycles take applications, and list those first (stable within a state).
+  return cycles
+    .map(({ offerings, ...c }) => ({
+      ...toCycle(c),
+      applications: cycleApplications(offerings.map((o) => windowState(o, now))),
+    }))
+    .sort((a, b) => APPLICATIONS_ORDER[a.applications] - APPLICATIONS_ORDER[b.applications]);
 }
 
 async function defaultCycleId(): Promise<string | null> {

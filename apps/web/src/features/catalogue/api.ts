@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { CatalogueCourse, Cycle } from '@vtmp/shared';
+import type { CatalogueCourse, CatalogueCycle, Cycle } from '@vtmp/shared';
 import { api } from '../../lib/api/client';
 
 export interface CatalogueResponse {
@@ -7,11 +7,14 @@ export interface CatalogueResponse {
   courses: CatalogueCourse[];
 }
 
-/** Cycles a student can choose from: offering active courses and not yet ended. */
+/**
+ * Cycles a student can choose from: offering active courses and not yet ended, those taking
+ * applications first (L7).
+ */
 export function useCycles() {
   return useQuery({
     queryKey: ['cycles'],
-    queryFn: ({ signal }) => api.get<Cycle[]>('/cycles', { signal }),
+    queryFn: ({ signal }) => api.get<CatalogueCycle[]>('/cycles', { signal }),
   });
 }
 

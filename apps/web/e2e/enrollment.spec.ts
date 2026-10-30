@@ -42,6 +42,8 @@ test.describe('Sprint 3: apply → approve → see APPROVED', () => {
     await expect(cycle).toHaveValue('');
     await expect(page.getByText('Choose a training cycle to see its courses')).toBeVisible();
     await expect(page.getByRole('link', { name: /^Apply:/ })).toHaveCount(0);
+    // L7: cycles taking applications come first and say so.
+    await expect(cycle.locator('option').nth(1)).toContainText('applications open');
     await cycle.selectOption({ index: 1 });
     await expect(page).toHaveURL(/[?&]cycle=/);
     const cycleId = new URL(page.url()).searchParams.get('cycle');

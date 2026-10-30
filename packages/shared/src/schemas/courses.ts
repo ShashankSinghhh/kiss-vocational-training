@@ -87,6 +87,14 @@ export type OfferingUpsertInput = z.infer<typeof OfferingUpsertSchema>;
 
 export type WindowState = 'NOT_OFFERED' | 'UPCOMING' | 'OPEN' | 'CLOSED';
 
+/** L7: whether a cycle takes applications now, will soon, or no longer (any of its courses). */
+export type CycleApplications = 'OPEN' | 'UPCOMING' | 'CLOSED';
+
+/** A cycle in the student's picker, with its application state (L7). */
+export interface CatalogueCycle extends Cycle {
+  applications: CycleApplications;
+}
+
 export interface Offering {
   courseId: string;
   cycleId: string;

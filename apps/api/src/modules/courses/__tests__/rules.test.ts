@@ -1,4 +1,10 @@
-import { cycleEndInstant, isWindowOpen, windowInsideCycle, windowState } from '../rules';
+import {
+  cycleApplications,
+  cycleEndInstant,
+  isWindowOpen,
+  windowInsideCycle,
+  windowState,
+} from '../rules';
 
 const opens = new Date('2026-11-01T00:00:00.000Z');
 const closes = new Date('2026-11-15T00:00:00.000Z');
@@ -40,5 +46,14 @@ describe('windowInsideCycle (L6)', () => {
   it('a window may close up to that instant, not a minute later', () => {
     expect(windowInsideCycle(new Date('2027-09-30T18:30:00.000Z'), endsOn, IST)).toBe(true);
     expect(windowInsideCycle(new Date('2027-09-30T18:31:00.000Z'), endsOn, IST)).toBe(false);
+  });
+});
+
+describe('cycleApplications (L7)', () => {
+  it('is open if any course is open, upcoming if one will open, closed otherwise', () => {
+    expect(cycleApplications(['CLOSED', 'OPEN', 'UPCOMING'])).toBe('OPEN');
+    expect(cycleApplications(['CLOSED', 'UPCOMING'])).toBe('UPCOMING');
+    expect(cycleApplications(['CLOSED', 'CLOSED'])).toBe('CLOSED');
+    expect(cycleApplications([])).toBe('CLOSED');
   });
 });

@@ -379,13 +379,24 @@ paths:
   /cycles:
     get:
       tags: [catalogue]
-      summary: 'Training cycles a student can choose on the Courses page (BRQ-2.2): offering at least one active course and not yet ended, newest first. Nothing is pre-selected.'
+      summary: 'Training cycles a student can choose on the Courses page (BRQ-2.2): offering at least one active course and not yet ended. Nothing is pre-selected.'
+      description: >-
+        Each cycle carries applications (OPEN, UPCOMING or CLOSED: whether any of its courses'
+        windows is open, will open, or neither). Cycles taking applications come first, then
+        upcoming, then closed; newest first within each (L7).
       responses:
         '200':
           description: Cycles
           content:
             application/json:
-              schema: { type: array, items: { $ref: '#/components/schemas/Cycle' } }
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Cycle'
+                    - type: object
+                      properties:
+                        applications: { type: string, enum: [OPEN, UPCOMING, CLOSED] }
 
   /admin/courses:
     get:

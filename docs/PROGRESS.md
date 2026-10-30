@@ -272,6 +272,28 @@ project rule (both below).
 
 ---
 
+## After Sprint 13 — Round 2 low-severity fix: cycles say whether they take applications (2026-10-30)
+
+### Built
+- **L7:** `GET /cycles` now gives each cycle `applications` (`OPEN`, `UPCOMING` or `CLOSED`,
+  from its courses' windows; pure rule `cycleApplications`) and lists the open ones first, then
+  upcoming, then closed. The student's cycle picker shows it beside each name ("Pilot · …
+  applications closed"). Before, a running cycle such as Pilot looked like any other, and a
+  student who picked it found nothing to apply for.
+- Tests: +2 API tests (the rule, and the order and labels); the apply e2e checks the first
+  option says "applications open".
+
+### Deviations from BRD/TAD (and why)
+- The report offered "list only cycles with an open window". Closed cycles stay listed, after
+  the open ones, because students training in them use the Courses page to see their own
+  application and course.
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (no new data) ·
+  [x] strings externalized (en, hi, or)
+
+---
+
 ## After Sprint 13 — Round 2 medium-severity fixes: deadlines and dates (2026-10-30)
 
 The four medium-severity items from the Round 2 review. No migration.
