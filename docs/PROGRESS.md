@@ -272,6 +272,34 @@ project rule (both below).
 
 ---
 
+## After Sprint 13 — Unique, realistic student names and a smaller seed (2026-10-30)
+
+### Built
+- The seed's student names were drawn at random from 24 first names and 14 surnames, so the 60
+  students held only 55 different names ("Chandan Hembram" three times) and some first names
+  five times. Four "surnames" were community names (Kandha, Saora, Juang, Gond), which people
+  don't use as surnames.
+- Now `STUDENT_NAMES` in `apps/api/src/seed/data.ts` lists 40 different people by hand: half
+  women and half men, first names common in Odisha, surnames of the state's tribal communities
+  (Santal, Munda, Ho, Oraon, Kharia, Kondh, Saora, Bhuyan).
+- The default seed has 40 students instead of 60: 001–020 free, 021–030 the pilot batch, 031–040
+  with pending applications (10, was 30). The `--large` seed still makes 500, naming the extra
+  ones by pairing the list's first names and surnames without repeats. CGPAs are unchanged.
+- Re-seeding an existing database renames students 001–040 to the new names (it never deletes,
+  so 041–060 stay where they exist).
+- Tests: +4 unit tests (`seed/__tests__/data.test.ts`: 40 listed names, no repeats in 40 or 500,
+  name shape, CGPAs as before). README and DEMO.md updated (student 021 is now Sanjukta Kujur).
+
+### Known gaps / follow-ups
+- Databases seeded before this keep students 041–060 until removed by hand. The screenshots in
+  `docs/screenshots` still show the old names.
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml (no API change) · [x] seed ·
+  [x] strings externalized (no UI change)
+
+---
+
 ## After Sprint 13 — Round 2 low-severity fix: cycles say whether they take applications (2026-10-30)
 
 ### Built

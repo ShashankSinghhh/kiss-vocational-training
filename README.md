@@ -98,7 +98,7 @@ same emails with a different, private password.
 | ------- | ------------------------------------------------------------------------------ |
 | Admin   | `admin@kiss-vtmp.test`                                                         |
 | Trainer | `trainer1@kiss-vtmp.test` … `trainer4@kiss-vtmp.test`                          |
-| Student | `student001@kiss-vtmp.test` … `student060@kiss-vtmp.test` (500 with `--large`) |
+| Student | `student001@kiss-vtmp.test` … `student040@kiss-vtmp.test` (500 with `--large`) |
 
 The seed also creates an open training cycle, three courses (Electrician — Domestic, Solar PV
 Installer, Tailoring & Garment Making) with open enrollment windows, and every Setting at its

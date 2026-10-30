@@ -65,13 +65,13 @@ async function seedApplications(
   return created;
 }
 
-export const DEFAULT_STUDENTS = 60;
+export const DEFAULT_STUDENTS = 40;
 export const LARGE_STUDENTS = 500;
 const BCRYPT_COST = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface SeedOptions {
-  /** Seed 500 students instead of 60 (BO-3 allocation timing test). */
+  /** Seed 500 students instead of 40 (BO-3 allocation timing test). */
   large?: boolean;
   log?: (message: string) => void;
 }
@@ -125,8 +125,16 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
   });
   const users = await prisma.user.findMany({
     where: { email: { in: students.map((s) => s.email) } },
-    select: { id: true, email: true },
+    select: { id: true, email: true, fullName: true },
   });
+  // A database seeded before the names were made unique gets them now (only these accounts).
+  const renamed = students.filter(
+    (s) => users.find((u) => u.email === s.email)?.fullName !== s.fullName,
+  );
+  for (const s of renamed) {
+    await prisma.user.update({ where: { email: s.email }, data: { fullName: s.fullName } });
+  }
+  if (renamed.length) log(`students renamed: ${renamed.length}`);
   const userIdByEmail = new Map(users.map((u) => [u.email, u.id]));
   await prisma.student.createMany({
     data: students.map((s) => ({

@@ -47,48 +47,54 @@ export const COURSES = [
   },
 ] as const;
 
-const FIRST_NAMES = [
-  'Aarti',
-  'Abhishek',
-  'Anjali',
-  'Bikash',
-  'Chandan',
-  'Deepa',
-  'Gitanjali',
-  'Jagannath',
-  'Jyoti',
-  'Kabita',
-  'Laxmi',
-  'Manas',
-  'Mamata',
-  'Niranjan',
-  'Pooja',
-  'Pradeep',
-  'Rakesh',
-  'Rashmi',
-  'Sanjay',
-  'Sasmita',
-  'Subhash',
-  'Sunita',
-  'Tapan',
-  'Upasana',
-];
-const LAST_NAMES = [
-  'Majhi',
-  'Hembram',
-  'Soren',
-  'Munda',
-  'Oram',
-  'Kisku',
-  'Tudu',
-  'Naik',
-  'Pradhan',
-  'Bhoi',
-  'Gond',
-  'Juang',
-  'Kandha',
-  'Saora',
-];
+/**
+ * The default students, in roll-number order: 40 different people, half women and half men,
+ * with first names common in Odisha and surnames of the state's tribal communities (Santal,
+ * Munda, Ho, Oraon, Kharia, Kondh, Saora, Bhuyan), as at KISS. Every full name is unique.
+ * Students 021–030 form the seeded pilot batch and 031–040 have pending applications.
+ */
+export const STUDENT_NAMES = [
+  'Sumitra Hembram',
+  'Rabindra Majhi',
+  'Sukanti Soren',
+  'Biren Munda',
+  'Lipika Tudu',
+  'Jitendra Kisku',
+  'Manjulata Oram',
+  'Prakash Marandi',
+  'Saraswati Naik',
+  'Dambaru Sabar',
+  'Basanti Murmu',
+  'Ramesh Gamango',
+  'Pramila Bhoi',
+  'Santosh Hansdah',
+  'Ritanjali Pradhan',
+  'Bijay Kanhar',
+  'Kalpana Besra',
+  'Susanta Jani',
+  'Puspanjali Dehury',
+  'Lalit Tirkey',
+  'Sanjukta Kujur',
+  'Ajit Ekka',
+  'Rinki Toppo',
+  'Dhaneswar Mallick',
+  'Anita Badaik',
+  'Kartik Bodra',
+  'Jamuna Purty',
+  'Sudam Lakra',
+  'Sabita Minz',
+  'Prafulla Raika',
+  'Rashmita Soren',
+  'Nabin Murmu',
+  'Laxmipriya Majhi',
+  'Ganesh Tudu',
+  'Kuni Munda',
+  'Bhagaban Naik',
+  'Sarojini Marandi',
+  'Hemanta Oram',
+  'Jharana Sabar',
+  'Tapas Kisku',
+] as const;
 
 /** Small linear congruential generator: same sequence on every run. */
 function lcg(seed: number) {
@@ -108,18 +114,38 @@ export interface SeedStudent {
   phone: string;
 }
 
+/**
+ * Names beyond the list (the 500-student `--large` seed only): the list's first names paired
+ * with its surnames in a fixed shuffled order, skipping pairs already used, so no name repeats.
+ */
+function extraNames(): string[] {
+  const firsts = [...new Set(STUDENT_NAMES.map((n) => n.split(' ')[0]!))];
+  const lasts = [...new Set(STUDENT_NAMES.map((n) => n.split(' ')[1]!))];
+  const used = new Set<string>(STUDENT_NAMES);
+  const pairs = firsts.flatMap((f) => lasts.map((l) => `${f} ${l}`)).filter((n) => !used.has(n));
+  const rand = lcg(7);
+  for (let i = pairs.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [pairs[i], pairs[j]] = [pairs[j]!, pairs[i]!];
+  }
+  return pairs;
+}
+
 export function makeStudents(count: number): SeedStudent[] {
+  const names = count > STUDENT_NAMES.length ? [...STUDENT_NAMES, ...extraNames()] : STUDENT_NAMES;
+  if (count > names.length) throw new Error(`At most ${names.length} seed students have names`);
   const rand = lcg(2026);
   return Array.from({ length: count }, (_, i) => {
     const n = i + 1;
-    const first = FIRST_NAMES[Math.floor(rand() * FIRST_NAMES.length)]!;
-    const last = LAST_NAMES[Math.floor(rand() * LAST_NAMES.length)]!;
+    // Two draws once picked the random names; kept so every student keeps the same CGPA.
+    rand();
+    rand();
     // CGPA spread 5.00–9.80 so the CGPA priority rule has something to sort.
     const cgpa = (5 + Math.round(rand() * 480) / 100).toFixed(2);
     return {
       n,
       email: `student${String(n).padStart(3, '0')}@${EMAIL_DOMAIN}`,
-      fullName: `${first} ${last}`,
+      fullName: names[i]!,
       rollNo: `KISS-VT-${String(n).padStart(4, '0')}`,
       cgpa,
       phone: `9${String(437000000 + n * 7919).padStart(9, '0')}`,
