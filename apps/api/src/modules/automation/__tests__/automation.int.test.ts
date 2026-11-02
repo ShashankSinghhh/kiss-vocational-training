@@ -18,6 +18,11 @@ import { DAILY_JOB, refreshAnalyticsAfterCertificate, runDaily } from '../automa
 const app = createApp();
 let admin: Awaited<ReturnType<typeof createLoginUser>>;
 let A: Record<string, string>;
+// These tests read or change data across the whole shared test database (every cycle, waitlist or
+// session), so their time grows with it. 1–2 s normally; on a large local database right after a
+// restart, or behind the analytics refresh other suites start, they have passed 5 s.
+jest.setTimeout(30_000);
+
 beforeAll(async () => {
   admin = await createLoginUser(prisma(), Role.ADMIN);
   A = bearer((await login(app, admin.email)).accessToken);

@@ -1,4 +1,4 @@
-export type HttpErrorStatus = 400 | 401 | 403 | 404 | 409 | 410 | 422 | 429 | 500 | 503;
+export type HttpErrorStatus = 400 | 401 | 403 | 404 | 409 | 410 | 413 | 415 | 422 | 429 | 500 | 503;
 
 export interface ErrorDetail {
   path: string;

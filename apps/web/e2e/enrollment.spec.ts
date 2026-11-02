@@ -1,10 +1,10 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
+import { ACCOUNTS, ADMIN_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
 
 /** Creates a fresh student through the admin API, so the flow can run again and again. */
 async function newStudent(request: APIRequestContext) {
   const login = await request.post('/api/v1/auth/login', {
-    data: { email: ACCOUNTS.ADMIN, password: SEED_PASSWORD },
+    data: { email: ACCOUNTS.ADMIN, password: ADMIN_PASSWORD },
   });
   expect(login.ok()).toBeTruthy();
   const { accessToken } = (await login.json()) as { accessToken: string };
@@ -142,7 +142,7 @@ test.describe('Sprint 3: apply → approve → see APPROVED', () => {
     request,
   }) => {
     const login = await request.post('/api/v1/auth/login', {
-      data: { email: ACCOUNTS.ADMIN, password: SEED_PASSWORD },
+      data: { email: ACCOUNTS.ADMIN, password: ADMIN_PASSWORD },
     });
     const { accessToken } = (await login.json()) as { accessToken: string };
     const s = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);

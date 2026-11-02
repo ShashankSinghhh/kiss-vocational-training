@@ -1,5 +1,5 @@
 import { expect, type APIRequestContext, type APIResponse } from '@playwright/test';
-import { ACCOUNTS, SEED_PASSWORD } from './helpers';
+import { ACCOUNTS, ADMIN_PASSWORD } from './helpers';
 
 export async function token(request: APIRequestContext, email: string, password: string) {
   const res = await request.post('/api/v1/auth/login', { data: { email, password } });
@@ -13,7 +13,7 @@ export async function token(request: APIRequestContext, email: string, password:
  * those are scheduling warnings, not hard clashes (T3).
  */
 export async function addCoTrainer(request: APIRequestContext, batchId: string) {
-  const admin = await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD);
+  const admin = await token(request, ACCOUNTS.ADMIN, ADMIN_PASSWORD);
   const headers = { Authorization: admin };
   const s = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const fullName = `Co-trainer ${s}`;
@@ -49,7 +49,7 @@ export async function addCoTrainer(request: APIRequestContext, batchId: string) 
  * either may teach, and the seeded trainer's many test sessions are not a hard clash (T3).
  */
 export async function setupActiveBatch(request: APIRequestContext) {
-  const admin = await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD);
+  const admin = await token(request, ACCOUNTS.ADMIN, ADMIN_PASSWORD);
   const h = { headers: { Authorization: admin } };
   const s = Date.now().toString(36);
   const day = (offset: number) =>

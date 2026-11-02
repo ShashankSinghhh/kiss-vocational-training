@@ -20,7 +20,7 @@ import {
 } from '@vtmp/shared';
 import { hashPassword, verifyPassword } from '../../core/auth';
 import { withAudit, type Actor } from '../../core/audit';
-import { prisma } from '../../core/db';
+import { likeLiteral, prisma } from '../../core/db';
 import { AppError } from '../../core/errors';
 import { paginated, parsePagination } from '../../core/http';
 import { getMe, revokeUserSessions } from '../auth/auth.service';
@@ -155,7 +155,7 @@ function toSummary(u: SummaryRow): UserSummary {
 
 export async function listUsers(query: UserListQuery): Promise<Paginated<UserSummary>> {
   const page = parsePagination(query);
-  const q = query.q;
+  const q = query.q ? likeLiteral(query.q) : undefined;
   const where: Prisma.UserWhereInput = {
     ...(query.role ? { role: query.role } : {}),
     ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),

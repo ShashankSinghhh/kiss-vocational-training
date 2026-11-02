@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import { Role, type PrismaClient } from '@prisma/client';
 import { audit } from '../core/audit';
 import { SETTINGS, SETTING_KEYS } from '../core/settings/registry';
-import { ADMIN, COURSES, SEED_PASSWORD, TRAINERS, makeStudents } from './data';
+import { ADMIN, COURSES, SEED_ADMIN_PASSWORD, SEED_PASSWORD, TRAINERS, makeStudents } from './data';
 import { seedCompetencies } from './competency';
 import { seedOpportunities } from './opportunities';
 import { seedCompletionReadiness, seedTraining } from './training';
@@ -93,7 +93,15 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
 
   await prisma.user.upsert({
     where: { email: ADMIN.email },
-    create: { email: ADMIN.email, fullName: ADMIN.fullName, role: Role.ADMIN, passwordHash },
+    create: {
+      email: ADMIN.email,
+      fullName: ADMIN.fullName,
+      role: Role.ADMIN,
+      passwordHash:
+        SEED_ADMIN_PASSWORD === SEED_PASSWORD
+          ? passwordHash
+          : await bcrypt.hash(SEED_ADMIN_PASSWORD, BCRYPT_COST),
+    },
     update: {},
   });
   log('admin: 1');

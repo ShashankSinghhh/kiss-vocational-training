@@ -151,11 +151,28 @@ To **change the demo password later**, run the same command with `--reset-passwo
 lockouts, signs those accounts out everywhere and audit-logs each change. It refuses the default
 `Password@123`.
 
+**Give the admin its own password** by also setting `SEED_ADMIN_PASSWORD` (recommended for the
+public demo: then the password shared with examiners opens the trainer and student accounts
+only). It must differ from `SEED_PASSWORD`, and it isn't the default either.
+
 ```bash
-DATABASE_URL="<neon direct url>" SEED_PASSWORD="<new demo password>" pnpm db:seed --reset-passwords
+DATABASE_URL="<neon direct url>" SEED_PASSWORD="<new demo password>" SEED_ADMIN_PASSWORD="<admin password>" pnpm db:seed --reset-passwords
 ```
 
-Afterwards, update the GitHub secret `E2E_PASSWORD` to match.
+Afterwards, update the GitHub secret `E2E_PASSWORD` to match, and `E2E_ADMIN_PASSWORD` if you
+set an admin password (step 6).
+
+**If the admin account gets locked** (anyone who knows its email can lock it for
+`auth.lockMinutes` with 5 wrong passwords, and only another admin can press Unlock), unlock it
+from your machine without changing any password:
+
+```bash
+DATABASE_URL="<neon direct url>" pnpm db:seed --unlock-admins
+```
+
+It unlocks every locked admin account (seeded or real) and audit-logs each unlock. Adding a
+second admin with a private, non-guessable email (Users page) also lets one admin unlock the
+other.
 
 ### 5. Freeze `PUBLIC_BASE_URL`
 
@@ -169,6 +186,8 @@ working too.
 
 - Variable `PUBLIC_BASE_URL` = the site URL
 - Secret `E2E_PASSWORD` = the demo seed password
+- Secret `E2E_ADMIN_PASSWORD` = the admin password, only if you set `SEED_ADMIN_PASSWORD` (the
+  manual Gate 1 and Gate 2 workflows sign in as admin; the smoke test signs in as a student)
 
 Every push to `main` then runs the CI job **Smoke test the deployed site** (read-only checks).
 
@@ -195,5 +214,6 @@ Pull requests get Vercel preview URLs for the web app (no API, see step 3.4).
 - [ ] `CRON_SECRET` is set in Vercel (Production) and nowhere else.
 - [ ] Neon password reset if it was ever shared outside Neon/Vercel.
 - [ ] Demo seed password is not `Password@123`.
+- [ ] The demo admin has its own password (`SEED_ADMIN_PASSWORD`), not the shared demo one.
 - [ ] Admin password changed after the first sign-in on production.
 - [ ] `NODE_ENV=production` (Secure cookie, HSTS, Postgres rate-limit store).

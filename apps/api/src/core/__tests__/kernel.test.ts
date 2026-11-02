@@ -61,6 +61,27 @@ describe('error shape', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('MALFORMED_JSON');
   });
+
+  it('a body over the limit becomes 413, not a 500 (security review, low)', async () => {
+    const app = appWith((a) => a.post('/x', (_req, res) => res.json({})));
+    const res = await request(app)
+      .post('/x')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ text: 'x'.repeat(1_100_000) }));
+    expect(res.status).toBe(413);
+    expect(res.body.error.code).toBe('PAYLOAD_TOO_LARGE');
+  });
+
+  it('an unsupported body encoding becomes 415', async () => {
+    const app = appWith((a) => a.post('/x', (_req, res) => res.json({})));
+    const res = await request(app)
+      .post('/x')
+      .set('Content-Type', 'application/json')
+      .set('Content-Encoding', 'x-unknown')
+      .send('{}');
+    expect(res.status).toBe(415);
+    expect(res.body.error.code).toBe('UNSUPPORTED_MEDIA_TYPE');
+  });
 });
 
 describe('validate()', () => {

@@ -9,7 +9,7 @@ import type {
 } from '@vtmp/shared';
 import { withAudit, type Actor, type AuditFn } from '../../core/audit';
 import { config } from '../../core/config';
-import { prisma, type Tx } from '../../core/db';
+import { likeLiteral, prisma, type Tx } from '../../core/db';
 import { AppError } from '../../core/errors';
 import { paginated, type PageRequest } from '../../core/http';
 import { settings } from '../../core/settings';
@@ -200,7 +200,7 @@ export async function list(
   query: CertificateListQuery,
   page: PageRequest,
 ): Promise<Paginated<CertificateDto>> {
-  const q = query.q?.trim();
+  const q = query.q?.trim() ? likeLiteral(query.q.trim()) : undefined;
   const where: Prisma.CertificateWhereInput = {
     ...(query.status ? { status: query.status } : {}),
     ...(q

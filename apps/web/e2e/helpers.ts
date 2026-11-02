@@ -3,6 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 
 /** Seeded dev/CI accounts (see README). Never real credentials. */
 export const SEED_PASSWORD = process.env.E2E_PASSWORD ?? 'Password@123';
+/** The admin's own password when the demo seeds one (SEED_ADMIN_PASSWORD); else the shared one. */
+export const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || SEED_PASSWORD;
 export const ACCOUNTS = {
   ADMIN: 'admin@kiss-vtmp.test',
   TRAINER: 'trainer1@kiss-vtmp.test',
@@ -23,7 +25,7 @@ if (process.env.E2E_BASE_URL && !process.env.E2E_PASSWORD) {
 export async function signIn(
   page: Page,
   email: string,
-  password = SEED_PASSWORD,
+  password = email === ACCOUNTS.ADMIN ? ADMIN_PASSWORD : SEED_PASSWORD,
   { expectSuccess = true }: { expectSuccess?: boolean } = {},
 ) {
   await page.goto('/login');

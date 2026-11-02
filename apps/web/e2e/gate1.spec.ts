@@ -5,7 +5,7 @@ import {
   type APIResponse,
   type Page,
 } from '@playwright/test';
-import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
+import { ACCOUNTS, ADMIN_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
 import { addCoTrainer, token } from './world';
 
 // The longest journey in the suite: pages load lazily, and on the dev server (or a cold
@@ -18,7 +18,7 @@ const expect = baseExpect.configure({ timeout: 20_000 });
  * that goes through the UI, by the role that owns it.
  */
 async function rawMaterial(request: APIRequestContext) {
-  const h = { headers: { Authorization: await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD) } };
+  const h = { headers: { Authorization: await token(request, ACCOUNTS.ADMIN, ADMIN_PASSWORD) } };
   const s = Date.now().toString(36);
   const day = (offset: number) =>
     new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10);

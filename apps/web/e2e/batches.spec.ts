@@ -1,5 +1,5 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
+import { ACCOUNTS, ADMIN_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
 import { addCoTrainer, setupActiveBatch } from './world';
 
 async function token(request: APIRequestContext, email: string, password: string) {
@@ -13,7 +13,7 @@ async function token(request: APIRequestContext, email: string, password: string
  * a batch with 2 seats and 3 approved applicants, so allocation places 2 and waitlists 1.
  */
 async function setup(request: APIRequestContext) {
-  const admin = await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD);
+  const admin = await token(request, ACCOUNTS.ADMIN, ADMIN_PASSWORD);
   const h = { headers: { Authorization: admin } };
   const s = Date.now().toString(36);
   const day = (offset: number) =>

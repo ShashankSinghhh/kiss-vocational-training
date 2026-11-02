@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ACCOUNTS, SEED_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
+import { ACCOUNTS, ADMIN_PASSWORD, expectNoSeriousA11yViolations, signIn } from './helpers';
 import { token } from './world';
 
 test.describe('Sprint 12: Odia and Hindi (F16, BRQ-16.1)', () => {
@@ -22,7 +22,7 @@ test.describe('Sprint 12: Odia and Hindi (F16, BRQ-16.1)', () => {
     request,
   }) => {
     const s = Date.now().toString(36);
-    const admin = await token(request, ACCOUNTS.ADMIN, SEED_PASSWORD);
+    const admin = await token(request, ACCOUNTS.ADMIN, ADMIN_PASSWORD);
     const student = {
       email: `e2e-lang-${s}@kiss-vtmp.test`,
       password: 'E2e-Lang-Pass1',

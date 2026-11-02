@@ -39,7 +39,7 @@ the bundle budget and the full browser suite, then a smoke test of the deployed 
 
 | Suite | Result |
 | --- | --- |
-| API unit + integration | **58 files, 481 tests, all passing** |
+| API unit + integration | **59 files, 488 tests, all passing** |
 | API coverage (statements / branches / functions / lines) | **88.54 % / 73.78 % / 88.97 % / 90.39 %** (v1.1, not re-measured) |
 | Browser (desktop + phone) | **75 tests, all passing** (journeys, security, accessibility) |
 | Accessibility | every page of every role: **0 serious or critical issues** |

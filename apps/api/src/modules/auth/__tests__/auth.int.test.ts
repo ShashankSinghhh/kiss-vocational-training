@@ -80,12 +80,11 @@ describe('POST /auth/login (TC-01)', () => {
 
   it('counts failures sent at the same moment, so a burst still locks (TC-02, NFR-09)', async () => {
     const user = await createLoginUser(prisma(), Role.STUDENT);
-    // Each request gets its own address, so the per-IP limit doesn't hide the account lock.
+    // 12 is well under the per-IP limit, so only the account lock can stop them.
     const statuses = await Promise.all(
       Array.from({ length: 12 }, (_, i) =>
         request(app)
           .post('/api/v1/auth/login')
-          .set('X-Forwarded-For', `198.51.100.${i + 1}`)
           .send({ email: user.email, password: `Wrong-guess-${i}` })
           .then((r) => r.status),
       ),

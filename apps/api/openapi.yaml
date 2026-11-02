@@ -11,6 +11,10 @@ info:
     POST /users/me/password, PATCH /users/me and GET /notifications/me until they choose their
     own password. The global request limit counts signed-in requests per user and anonymous
     ones per IP.
+
+    Any route that takes a body may also answer 400 MALFORMED_JSON or BAD_REQUEST_BODY, 413
+    PAYLOAD_TOO_LARGE (bodies over 1 MB) or 415 UNSUPPORTED_MEDIA_TYPE (an unknown body
+    encoding); these are listed once here rather than on every route.
 servers:
   - url: http://localhost:4000/api/v1
     description: Local development
@@ -2884,6 +2888,16 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
     Conflict:
       description: Business rule conflict
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PayloadTooLarge:
+      description: Request body over the 1 MB limit
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UnsupportedMediaType:
+      description: Request body encoding not supported
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }

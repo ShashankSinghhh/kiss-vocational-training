@@ -14,7 +14,7 @@ import type {
 } from '@vtmp/shared';
 import { INACTIVE_ENROLLMENT_STATUSES } from '@vtmp/shared';
 import { audit, withAudit, type Actor, type AuditFn } from '../../core/audit';
-import { prisma, type Tx } from '../../core/db';
+import { likeLiteral, prisma, type Tx } from '../../core/db';
 import { AppError } from '../../core/errors';
 import { paginated, parsePagination } from '../../core/http';
 import { settings } from '../../core/settings';
@@ -522,7 +522,7 @@ export async function adminList(
   query: AdminEnrollmentQuery,
 ): Promise<Paginated<AdminEnrollmentRow>> {
   const page = parsePagination(query);
-  const q = query.q;
+  const q = query.q ? likeLiteral(query.q) : undefined;
   const where: Prisma.EnrollmentWhereInput = {
     ...(query.cycleId ? { cycleId: query.cycleId } : {}),
     ...(query.status ? { status: query.status } : {}),

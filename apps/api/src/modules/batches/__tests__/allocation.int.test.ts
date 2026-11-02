@@ -13,6 +13,11 @@ import { bearer, login } from '../../../../test/http';
 const app = createApp();
 let admin: Record<string, string>;
 
+// These tests read or change data across the whole shared test database (every cycle, waitlist or
+// session), so their time grows with it. 1–2 s normally; on a large local database right after a
+// restart, or behind the analytics refresh other suites start, they have passed 5 s.
+jest.setTimeout(30_000);
+
 beforeAll(async () => {
   const user = await createLoginUser(prisma(), Role.ADMIN);
   admin = bearer((await login(app, user.email)).accessToken);

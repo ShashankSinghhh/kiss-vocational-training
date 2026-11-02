@@ -2,6 +2,9 @@
 
 // Override with SEED_PASSWORD when seeding a public demo database.
 export const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'Password@123';
+// Admin accounts can have their own password (SEED_ADMIN_PASSWORD), so sharing the demo password
+// with examiners doesn't hand out admin access. Without it, admins use SEED_PASSWORD.
+export const SEED_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? SEED_PASSWORD;
 export const EMAIL_DOMAIN = 'kiss-vtmp.test';
 
 export const ADMIN = { email: `admin@${EMAIL_DOMAIN}`, fullName: 'Portal Administrator' };

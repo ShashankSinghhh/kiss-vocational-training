@@ -176,6 +176,42 @@ describe('admin user management', () => {
   });
 });
 
+describe('user search matches % and _ literally (BRQ-2.5)', () => {
+  it('does not treat % or _ as wildcards', async () => {
+    const { accessToken } = await signedIn(Role.ADMIN);
+    const tag = uid();
+    const percent = await prisma().user.create({
+      data: {
+        email: `pct-${tag}@test.local`,
+        fullName: `Full 100% ${tag}`,
+        role: Role.TRAINER,
+        passwordHash: 'x',
+      },
+    });
+    await prisma().user.create({
+      data: {
+        email: `plain-${tag}@test.local`,
+        fullName: `Full 1000 ${tag}`,
+        role: Role.TRAINER,
+        passwordHash: 'x',
+      },
+    });
+    const search = async (q: string) =>
+      (
+        await request(app)
+          .get('/api/v1/admin/users')
+          .query({ q, pageSize: 100 })
+          .set(bearer(accessToken))
+      ).body.data.map((u: { id: string }) => u.id) as string[];
+
+    // "100%" finds only the name with a real percent sign, not "1000".
+    expect(await search(`100% ${tag}`)).toEqual([percent.id]);
+    // "_" is a character, not "any one character".
+    expect(await search(`Full_100`)).toEqual([]);
+    expect(await search(`%${tag}`)).toEqual([]);
+  });
+});
+
 describe('admin user clean-up (BRQ-2.5)', () => {
   it('deactivates several users at once: sessions revoked, each change audited', async () => {
     const admin = await signedIn(Role.ADMIN);

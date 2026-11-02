@@ -18,6 +18,8 @@ jobs:
     env:
       E2E_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      # Only when the demo admin has its own password (SEED_ADMIN_PASSWORD); else unused.
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

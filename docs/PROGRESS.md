@@ -272,6 +272,47 @@ project rule (both below).
 
 ---
 
+## After Sprint 13 — Low-severity security fixes (2026-11-02)
+
+The four low findings of the security check (see the medium-fixes entry below).
+
+### Built
+- **Search wildcards:** Prisma's `contains` doesn't escape `%` and `_`, so searching for `%`
+  listed every user. A new `likeLiteral()` (`core/db/search.ts`) escapes them, and the user,
+  application and certificate searches use it. Tests: unit test, and an integration test where
+  "100%" no longer matches "1000" (it fails on the old code).
+- **Bad request bodies answered 500:** a body over 1 MB was refused with 500 INTERNAL_ERROR and a
+  stack trace in the error log. Every `express.json()` error now maps to a 4xx: 413
+  PAYLOAD_TOO_LARGE, 415 UNSUPPORTED_MEDIA_TYPE, 400 MALFORMED_JSON or BAD_REQUEST_BODY, without
+  an error-level log. Listed once in openapi.yaml's description and responses.
+- **One password for every demo account:** `SEED_ADMIN_PASSWORD` gives the seeded admin its own
+  password, both in the seed and in `--reset-passwords`, which refuses it if it equals the demo
+  password or the default. The browser tests read `E2E_ADMIN_PASSWORD` for admin sign-ins
+  (falling back to the shared one), and the manual Gate 1 and Gate 2 workflows pass that secret.
+- **Anyone can lock the only admin:** the 5-failure lock is a rule (TAD §9) and stays. New
+  `pnpm db:seed --unlock-admins` lets the owner unlock every locked admin at once from their
+  machine (passwords untouched, each unlock audited). DEPLOYMENT.md also suggests a second
+  admin with a private email.
+- **Test robustness:** the automation and allocation tests touch data across the whole shared
+  test database, so on a large local database they crossed 5 s now and then (after a Postgres
+  restart, or behind analytics refreshes started by other suites). They now have 30 s each;
+  nothing is skipped. The parallel-login test no longer sends an `X-Forwarded-For` header, which
+  made the rate limiter log a warning.
+
+### Deviations from BRD/TAD (and why)
+- CLAUDE.md rule 6 lists 400/401/403/404/409/422; 413 and 415 are added for request bodies the
+  server can't read, because they are the standard answers and were 500 before.
+
+### Known gaps / follow-ups
+- To use the separate admin password on the live site, the owner runs `--reset-passwords` with
+  `SEED_ADMIN_PASSWORD` and adds the GitHub secret `E2E_ADMIN_PASSWORD` (DEPLOYMENT.md step 4, 6).
+
+### Definition of done
+- [x] lint · [x] typecheck · [x] tests (488) · [x] openapi.yaml · [x] seed · [x] strings
+  externalized (no UI change)
+
+---
+
 ## After Sprint 13 — A public front page (2026-11-02)
 
 - **Why:** the portal opened on a bare sign-in form. Visitors, examiners and employers had nothing
