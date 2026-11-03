@@ -5,6 +5,8 @@ import { api } from '../../lib/api/client';
 export interface CatalogueResponse {
   cycle: Cycle | null;
   courses: CatalogueCourse[];
+  /** How many courses one application may rank (setting enrollment.maxPreferences). */
+  maxPreferences: number;
 }
 
 /**

@@ -31,7 +31,14 @@ describe('admin courses, cycles and windows (BRQ-2.1, 2.3)', () => {
     const dup = await request(app)
       .post('/api/v1/admin/courses')
       .set(admin.auth)
-      .send({ ...created.body, id: undefined, isActive: undefined, inUse: undefined, code });
+      .send({
+        ...created.body,
+        id: undefined,
+        isActive: undefined,
+        inUse: undefined,
+        programme: undefined,
+        code,
+      });
     expect(dup.status).toBe(409);
     expect(dup.body.error.code).toBe('COURSE_CODE_TAKEN');
 

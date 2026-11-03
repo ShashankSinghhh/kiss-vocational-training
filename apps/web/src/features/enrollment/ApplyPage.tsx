@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { INACTIVE_ENROLLMENT_STATUSES, MAX_PREFERENCES } from '@vtmp/shared';
+import { INACTIVE_ENROLLMENT_STATUSES, MAX_PREFERENCES, type CatalogueCourse } from '@vtmp/shared';
 import { Button, Card, EmptyState, PageSkeleton } from '../../components/ui';
 import { useToast } from '../../components/toast';
 import { useErrorMessage } from '../../lib/api/useErrorMessage';
@@ -12,8 +12,9 @@ const linkClass =
   'text-sm font-medium text-brand-700 underline hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600';
 
 /**
- * Apply (or edit) with up to three ranked preferences (BRQ-3.1). Ranking uses selects plus
- * move up/down buttons, which work with keyboard and screen readers (no drag-only control).
+ * Apply (or edit) with up to the configured number of ranked preferences (BRQ-3.1; setting
+ * enrollment.maxPreferences, 1 at KISS: one course). Courses are grouped by programme. Ranking
+ * uses selects plus move up/down buttons, which work with keyboard and screen readers.
  */
 export function ApplyPage() {
   const { t } = useTranslation('enrollment');
@@ -43,6 +44,18 @@ export function ApplyPage() {
     () => (catalogue.data?.courses ?? []).filter((c) => c.offering?.windowState === 'OPEN'),
     [catalogue.data],
   );
+  const maxPreferences = catalogue.data?.maxPreferences ?? MAX_PREFERENCES;
+  // Open courses by programme, keeping the catalogue's order (programmes, then titles).
+  const groups = useMemo(() => {
+    const m = new Map<string, { name: string; courses: CatalogueCourse[] }>();
+    for (const c of openCourses) {
+      const key = c.programme?.id ?? '';
+      const g = m.get(key) ?? { name: c.programme?.name ?? '', courses: [] };
+      g.courses.push(c);
+      m.set(key, g);
+    }
+    return [...m.values()];
+  }, [openCourses]);
 
   useEffect(() => {
     if (prefilled || !catalogue.data || !mine.data) return;
@@ -131,7 +144,9 @@ export function ApplyPage() {
         <h1 className="text-2xl font-bold text-slate-900">
           {editing ? t('apply.editTitle') : t('apply.title')}
         </h1>
-        <p className="mt-1 text-sm text-slate-700">{t('apply.intro', { max: MAX_PREFERENCES })}</p>
+        <p className="mt-1 text-sm text-slate-700">
+          {maxPreferences === 1 ? t('apply.introOne') : t('apply.intro', { max: maxPreferences })}
+        </p>
         <p className="mt-1 text-sm font-medium text-slate-800">
           {t('apply.cycle', { name: cycle.name })}
         </p>
@@ -157,7 +172,7 @@ export function ApplyPage() {
                 >
                   <div className="flex-1">
                     <label htmlFor={id} className="text-sm font-medium text-slate-800">
-                      {t('apply.rank', { rank: i + 1 })}
+                      {maxPreferences === 1 ? t('apply.course') : t('apply.rank', { rank: i + 1 })}
                     </label>
                     <select
                       id={id}
@@ -166,48 +181,59 @@ export function ApplyPage() {
                       className="mt-1 h-10 w-full rounded-md border border-slate-400 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                     >
                       <option value="">{t('apply.noChoice')}</option>
-                      {openCourses
-                        .filter((c) => c.id === value || !takenElsewhere.has(c.id))
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.title} ({c.code})
-                          </option>
-                        ))}
+                      {groups.map((g) => {
+                        const options = g.courses
+                          .filter((c) => c.id === value || !takenElsewhere.has(c.id))
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.title} ({c.code})
+                            </option>
+                          ));
+                        return g.name ? (
+                          <optgroup key={g.name} label={g.name}>
+                            {options}
+                          </optgroup>
+                        ) : (
+                          options
+                        );
+                      })}
                     </select>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={i === 0}
-                      onClick={() => move(i, -1)}
-                      aria-label={t('apply.moveUp', { rank: i + 1 })}
-                    >
-                      <span aria-hidden="true">↑</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={i === slots.length - 1}
-                      onClick={() => move(i, 1)}
-                      aria-label={t('apply.moveDown', { rank: i + 1 })}
-                    >
-                      <span aria-hidden="true">↓</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => remove(i)}
-                      aria-label={t('apply.remove', { rank: i + 1 })}
-                    >
-                      <span aria-hidden="true">✕</span>
-                    </Button>
-                  </div>
+                  {maxPreferences > 1 && (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={i === 0}
+                        onClick={() => move(i, -1)}
+                        aria-label={t('apply.moveUp', { rank: i + 1 })}
+                      >
+                        <span aria-hidden="true">↑</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={i === slots.length - 1}
+                        onClick={() => move(i, 1)}
+                        aria-label={t('apply.moveDown', { rank: i + 1 })}
+                      >
+                        <span aria-hidden="true">↓</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => remove(i)}
+                        aria-label={t('apply.remove', { rank: i + 1 })}
+                      >
+                        <span aria-hidden="true">✕</span>
+                      </Button>
+                    </div>
+                  )}
                 </li>
               );
             })}
           </ol>
-          {slots.length < Math.min(MAX_PREFERENCES, openCourses.length) && (
+          {slots.length < Math.min(maxPreferences, openCourses.length) && (
             <div>
               <Button variant="secondary" size="sm" onClick={() => setSlots((s) => [...s, ''])}>
                 {t('apply.choose')}

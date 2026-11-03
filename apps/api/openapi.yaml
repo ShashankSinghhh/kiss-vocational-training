@@ -394,6 +394,21 @@ paths:
                 properties:
                   cycle: { $ref: '#/components/schemas/Cycle' }
                   courses: { type: array, items: { $ref: '#/components/schemas/CatalogueCourse' } }
+                  maxPreferences:
+                    type: integer
+                    description: How many courses one application may rank (setting enrollment.maxPreferences).
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /programmes:
+    get:
+      tags: [catalogue]
+      summary: Programmes (groups of related courses) in display order
+      description: Students choose a programme, then one course in it.
+      responses:
+        '200':
+          description: Programmes
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Programme' } }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /courses/{id}:
     get:
@@ -457,6 +472,11 @@ paths:
                   default: true
                   description: Automatic approval waits for a person to check the prerequisites.
                 seatCapacity: { type: integer, minimum: 1 }
+                programmeId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Programme the course is listed under; 422 PROGRAMME_NOT_FOUND if unknown.
       responses:
         '201': { description: Created }
         '409': { $ref: '#/components/responses/Conflict' }
@@ -519,6 +539,56 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /admin/programmes:
+    get:
+      tags: [admin-courses]
+      summary: Programmes (Admin)
+      responses:
+        '200':
+          description: Programmes
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Programme' } }
+    post:
+      tags: [admin-courses]
+      summary: Create a programme (Admin)
+      description: Audited as PROGRAMME_CREATED. 409 PROGRAMME_NAME_TAKEN when the name is in use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgrammeInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Programme' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/programmes/{id}:
+    patch:
+      tags: [admin-courses]
+      summary: Rename or reorder a programme (Admin)
+      description: Audited as PROGRAMME_UPDATED. 409 PROGRAMME_NAME_TAKEN when the name is in use.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProgrammeInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Programme' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
   /admin/cycles:
     get:
       tags: [admin-courses]
@@ -2678,6 +2748,20 @@ components:
         seatsRemaining: { type: integer, description: Indicative }
         offering:
           { type: object, allOf: [{ $ref: '#/components/schemas/Offering' }], nullable: true }
+        programme:
+          { type: object, allOf: [{ $ref: '#/components/schemas/Programme' }], nullable: true }
+    Programme:
+      type: object
+      description: A group of related courses (e.g. Computer & Digital Skills).
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        sortOrder: { type: integer, description: Lower numbers are listed first }
+    ProgrammeInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 3, maxLength: 80 }
+        sortOrder: { type: integer, minimum: 0, maximum: 999 }
     Enrollment:
       type: object
       properties:

@@ -255,9 +255,12 @@ model Course {
   prerequisitesNeedReview Boolean  @default(true) @map("prerequisites_need_review")
   seatCapacity            Int      @map("seat_capacity")
   isActive                Boolean  @default(true) @map("is_active")
+  /// The programme (group of related courses) a student picks before the course.
+  programmeId             String?  @map("programme_id") @db.Uuid
   createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  programme    Programme?             @relation(fields: [programmeId], references: [id], onDelete: Restrict)
   offerings    CourseOffering[]
   preferences  EnrollmentPreference[]
   batches      Batch[]
@@ -266,7 +269,22 @@ model Course {
   materials Material[]
 
   @@index([isActive])
+  @@index([programmeId])
   @@map("courses")
+}
+
+/// A group of related courses (e.g. Computer & Digital Skills). Students choose a programme,
+/// then one course in it; each course still runs in its own batch.
+model Programme {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  courses Course[]
+
+  @@map("programmes")
 }
 
 model TrainingCycle {

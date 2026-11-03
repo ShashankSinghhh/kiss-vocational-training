@@ -3,12 +3,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import type { AdminCourse, Offering } from '@vtmp/shared';
-import { Button, Input, Modal } from '../../components/ui';
+import type { AdminCourse, Offering, Programme } from '@vtmp/shared';
+import { Button, Input, Modal, Select } from '../../components/ui';
 import { useToast } from '../../components/toast';
 import { useErrorMessage } from '../../lib/api/useErrorMessage';
 import { fromLocalInput, toLocalInput } from '../../lib/format';
-import { useCreateCourse, useCreateCycle, useUpdateCourse, useUpsertOffering } from './api';
+import {
+  useAdminProgrammes,
+  useCreateCourse,
+  useCreateCycle,
+  useCreateProgramme,
+  useUpdateCourse,
+  useUpdateProgramme,
+  useUpsertOffering,
+} from './api';
 
 // Form schemas mirror the shared API schemas; numbers arrive from inputs as strings.
 const CourseForm = z.object({
@@ -22,6 +30,7 @@ const CourseForm = z.object({
   prerequisites: z.string().trim().max(500),
   prerequisitesNeedReview: z.boolean(),
   seatCapacity: z.coerce.number().int().min(1).max(1000),
+  programmeId: z.string(),
 });
 type CourseValues = z.input<typeof CourseForm>;
 
@@ -39,6 +48,7 @@ export function CourseFormModal({
   const errorMessage = useErrorMessage();
   const create = useCreateCourse();
   const update = useUpdateCourse();
+  const programmes = useAdminProgrammes();
   const {
     register,
     handleSubmit,
@@ -50,7 +60,11 @@ export function CourseFormModal({
     if (open) {
       reset(
         course
-          ? { ...course, prerequisites: course.prerequisites ?? '' }
+          ? {
+              ...course,
+              prerequisites: course.prerequisites ?? '',
+              programmeId: course.programme?.id ?? '',
+            }
           : {
               code: '',
               title: '',
@@ -59,6 +73,7 @@ export function CourseFormModal({
               prerequisites: '',
               prerequisitesNeedReview: true,
               seatCapacity: 30,
+              programmeId: '',
             },
       );
     }
@@ -73,6 +88,7 @@ export function CourseFormModal({
       prerequisites: v.prerequisites || null,
       prerequisitesNeedReview: v.prerequisitesNeedReview,
       seatCapacity: v.seatCapacity,
+      programmeId: v.programmeId || null,
     };
     try {
       if (course) {
@@ -121,6 +137,17 @@ export function CourseFormModal({
           {...register('code')}
         />
         <Input label={t('fields.title')} required error={err('title')} {...register('title')} />
+        <div className="sm:col-span-2">
+          <Select
+            label={t('fields.programme')}
+            hint={t('admin.programmeHint')}
+            options={[
+              { value: '', label: t('admin.noProgramme') },
+              ...(programmes.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            {...register('programmeId')}
+          />
+        </div>
         <div className="sm:col-span-2">
           <label htmlFor="course-description" className="text-sm font-medium text-slate-800">
             {t('fields.description')}
@@ -172,6 +199,92 @@ export function CourseFormModal({
           </label>
           <p className="mt-1 text-xs text-slate-600">{t('fields.prerequisitesNeedReviewHint')}</p>
         </div>
+      </form>
+    </Modal>
+  );
+}
+
+const ProgrammeForm = z.object({
+  name: z.string().trim().min(3).max(80),
+  sortOrder: z.coerce.number().int().min(0).max(999),
+});
+type ProgrammeValues = z.input<typeof ProgrammeForm>;
+
+export function ProgrammeFormModal({
+  open,
+  programme,
+  onClose,
+}: {
+  open: boolean;
+  programme: Programme | null;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation('courses');
+  const toast = useToast();
+  const errorMessage = useErrorMessage();
+  const create = useCreateProgramme();
+  const update = useUpdateProgramme();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProgrammeValues>({ resolver: zodResolver(ProgrammeForm) });
+
+  useEffect(() => {
+    if (open) reset(programme ?? { name: '', sortOrder: 0 });
+  }, [open, programme, reset]);
+
+  const onSubmit = handleSubmit(async (raw) => {
+    const v = ProgrammeForm.parse(raw);
+    try {
+      if (programme) await update.mutateAsync({ id: programme.id, ...v });
+      else await create.mutateAsync(v);
+      toast.show({ tone: 'success', title: t('admin.saved') });
+      onClose();
+    } catch (err) {
+      toast.show({ tone: 'error', title: errorMessage(err) });
+    }
+  });
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        programme ? t('admin.editProgrammeFor', { name: programme.name }) : t('admin.addProgramme')
+      }
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t('admin.cancel')}
+          </Button>
+          <Button type="submit" form="programme-form" loading={isSubmitting}>
+            {t('admin.save')}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="programme-form"
+        noValidate
+        onSubmit={(e) => void onSubmit(e)}
+        className="grid gap-4 sm:grid-cols-[1fr_8rem]"
+      >
+        <Input
+          label={t('fields.programme')}
+          required
+          error={errors.name ? t('admin.invalid') : undefined}
+          {...register('name')}
+        />
+        <Input
+          label={t('fields.sortOrder')}
+          type="number"
+          min={0}
+          hint={t('admin.sortOrderHint')}
+          error={errors.sortOrder ? t('admin.invalid') : undefined}
+          {...register('sortOrder')}
+        />
       </form>
     </Modal>
   );

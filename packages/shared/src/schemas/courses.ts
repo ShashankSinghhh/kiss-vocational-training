@@ -19,6 +19,8 @@ export const CourseCreateSchema = z
     /** Automatic approval waits for a person to check the prerequisites (D2); default true. */
     prerequisitesNeedReview: z.boolean().optional(),
     seatCapacity: z.coerce.number().int().min(1).max(1000),
+    /** The programme (group of courses) students find it under; null = none. */
+    programmeId: z.string().uuid().nullable().optional(),
   })
   .strict();
 export type CourseCreateInput = z.infer<typeof CourseCreateSchema>;
@@ -30,6 +32,28 @@ export const CourseUpdateSchema = CourseCreateSchema.omit({ code: true })
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
 export type CourseUpdateInput = z.infer<typeof CourseUpdateSchema>;
 
+// ─── Programmes: groups of related courses ────────────────────────────────────
+
+/** A programme (e.g. Computer & Digital Skills): students pick one, then a course in it. */
+export interface Programme {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
+export const ProgrammeSchema = z
+  .object({
+    name: z.string().trim().min(3).max(80),
+    sortOrder: z.coerce.number().int().min(0).max(999).optional(),
+  })
+  .strict();
+export type ProgrammeInput = z.infer<typeof ProgrammeSchema>;
+
+export const ProgrammeUpdateSchema = ProgrammeSchema.partial()
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
+export type ProgrammeUpdateInput = z.infer<typeof ProgrammeUpdateSchema>;
+
 export interface AdminCourse {
   id: string;
   code: string;
@@ -40,6 +64,7 @@ export interface AdminCourse {
   prerequisitesNeedReview: boolean;
   seatCapacity: number;
   isActive: boolean;
+  programme: { id: string; name: string } | null;
   /** What deactivating it would affect (D4): live batches, students placed, open windows. */
   inUse: { batches: number; students: number; openWindows: number };
 }
@@ -116,6 +141,7 @@ export interface CatalogueCourse {
   /** Indicative: capacity minus approved applications ranking it first and allocated students. */
   seatsRemaining: number;
   offering: Offering | null;
+  programme: Programme | null;
 }
 
 export const CatalogueQuerySchema = z.object({

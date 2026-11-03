@@ -7,6 +7,8 @@ import {
   CourseUpdateSchema,
   CycleCreateSchema,
   CycleUpdateSchema,
+  ProgrammeSchema,
+  ProgrammeUpdateSchema,
   OfferingUpsertSchema,
 } from '@vtmp/shared';
 import { authenticate, authorize } from '../../core/auth';
@@ -35,6 +37,7 @@ export function catalogueRoutes(): Router {
     controller.catalogueCourse,
   );
   router.get('/cycles', authenticate, controller.catalogueCycles);
+  router.get('/programmes', authenticate, controller.programmes);
   return router;
 }
 
@@ -58,6 +61,13 @@ export function adminCourseRoutes(): Router {
   router.delete('/courses/:id', validate({ params: IdParams }), controller.deleteCourse);
   router.get('/cycles', controller.cycles);
   router.post('/cycles', validate({ body: CycleCreateSchema }), controller.createCycle);
+  router.get('/programmes', controller.programmes);
+  router.post('/programmes', validate({ body: ProgrammeSchema }), controller.createProgramme);
+  router.patch(
+    '/programmes/:id',
+    validate({ params: IdParams, body: ProgrammeUpdateSchema }),
+    controller.updateProgramme,
+  );
   router.patch(
     '/cycles/:id',
     validate({ params: IdParams, body: CycleUpdateSchema }),

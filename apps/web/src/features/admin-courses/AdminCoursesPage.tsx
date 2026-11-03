@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AdminCourse, Offering } from '@vtmp/shared';
+import type { AdminCourse, Offering, Programme } from '@vtmp/shared';
 import {
   Badge,
   Button,
@@ -22,12 +22,13 @@ import { WindowBadge } from '../catalogue/WindowBadge';
 import {
   useAdminCourses,
   useAdminCycles,
+  useAdminProgrammes,
   useDeleteCourse,
   useOfferings,
   useSetCoursesActive,
   useUpdateCourse,
 } from './api';
-import { CourseFormModal, CycleFormModal, WindowFormModal } from './forms';
+import { CourseFormModal, CycleFormModal, ProgrammeFormModal, WindowFormModal } from './forms';
 
 /** Admin: courses (BRQ-2.1) and cycles with per-course enrollment windows (BRQ-2.3). */
 export function AdminCoursesPage() {
@@ -38,9 +39,98 @@ export function AdminCoursesPage() {
         <h1 className="text-2xl font-bold text-slate-900">{t('admin.title')}</h1>
         <p className="mt-1 max-w-2xl text-sm text-slate-700">{t('admin.intro')}</p>
       </div>
+      <ProgrammesSection />
       <CoursesSection />
       <CyclesSection />
     </div>
+  );
+}
+
+/** Programmes group related courses; students pick one, then a course in it. */
+function ProgrammesSection() {
+  const { t } = useTranslation('courses');
+  const errorMessage = useErrorMessage();
+  const { data, isPending, isError, error } = useAdminProgrammes();
+  const courses = useAdminCourses();
+  const [editing, setEditing] = useState<Programme | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of courses.data ?? []) {
+      if (c.programme && c.isActive) m.set(c.programme.id, (m.get(c.programme.id) ?? 0) + 1);
+    }
+    return m;
+  }, [courses.data]);
+
+  const columns: Column<Programme>[] = [
+    {
+      key: 'order',
+      header: t('fields.sortOrder'),
+      align: 'right',
+      render: (p) => p.sortOrder,
+    },
+    {
+      key: 'name',
+      header: t('fields.programme'),
+      render: (p) => <span className="font-medium">{p.name}</span>,
+    },
+    {
+      key: 'courses',
+      header: t('admin.activeCourses'),
+      align: 'right',
+      render: (p) => counts.get(p.id) ?? 0,
+    },
+    {
+      key: 'actions',
+      header: <span className="sr-only">{t('admin.actions')}</span>,
+      align: 'right',
+      render: (p) => (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            setEditing(p);
+            setFormOpen(true);
+          }}
+          aria-label={t('admin.editProgrammeFor', { name: p.name })}
+        >
+          {t('admin.editProgramme')}
+        </Button>
+      ),
+    },
+  ];
+
+  return (
+    <Card
+      title={t('admin.programmesHeading')}
+      actions={
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        >
+          {t('admin.addProgramme')}
+        </Button>
+      }
+    >
+      <p className="mb-4 text-sm text-slate-700">{t('admin.programmesIntro')}</p>
+      {isPending ? (
+        <Spinner />
+      ) : isError ? (
+        <EmptyState title={errorMessage(error)} />
+      ) : (
+        <Table
+          caption={t('admin.programmesCaption')}
+          columns={columns}
+          rows={data}
+          rowKey={(p) => p.id}
+          empty={<EmptyState title={t('admin.noProgrammes')} />}
+        />
+      )}
+      <ProgrammeFormModal open={formOpen} programme={editing} onClose={() => setFormOpen(false)} />
+    </Card>
   );
 }
 
@@ -72,6 +162,8 @@ function CoursesSection() {
     'active',
     oneOf(...COURSE_STATUSES),
   );
+  const [programmeId, setProgrammeId] = useState('');
+  const programmes = useAdminProgrammes();
   const { selected, toggle: toggleRow, toggleAll, clear } = useSelection();
 
   const rows = useMemo(() => {
@@ -79,11 +171,12 @@ function CoursesSection() {
     return (data ?? []).filter(
       (c) =>
         (status === 'all' || c.isActive === (status === 'active')) &&
+        (!programmeId || c.programme?.id === programmeId) &&
         (!q || `${c.title} ${c.code}`.toLowerCase().includes(q)),
     );
-  }, [data, search, status]);
+  }, [data, search, status, programmeId]);
   // A new result set clears the selection so bulk actions never hit rows the admin can't see.
-  useEffect(clear, [search, status, clear]);
+  useEffect(clear, [search, status, programmeId, clear]);
   const visibleIds = rows.map((c) => c.id);
   const selectedIds = visibleIds.filter((id) => selected.has(id));
   const allSelected = rows.length > 0 && selectedIds.length === rows.length;
@@ -169,6 +262,11 @@ function CoursesSection() {
       render: (c) => <span className="font-medium">{c.title}</span>,
     },
     {
+      key: 'programme',
+      header: t('fields.programme'),
+      render: (c) => c.programme?.name ?? <span className="text-slate-600">—</span>,
+    },
+    {
       key: 'duration',
       header: t('fields.duration'),
       render: (c) => t('fields.durationValue', { count: c.durationWeeks }),
@@ -242,7 +340,7 @@ function CoursesSection() {
       }
     >
       <div className="flex flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
           <Input
             label={t('admin.searchCourses')}
             type="search"
@@ -254,6 +352,15 @@ function CoursesSection() {
             value={status}
             onChange={(e) => setStatus(e.target.value as CourseStatusFilter)}
             options={COURSE_STATUSES.map((s) => ({ value: s, label: t(`admin.show.${s}`) }))}
+          />
+          <Select
+            label={t('fields.programme')}
+            value={programmeId}
+            onChange={(e) => setProgrammeId(e.target.value)}
+            options={[
+              { value: '', label: t('admin.allProgrammes') },
+              ...(programmes.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+            ]}
           />
         </div>
 

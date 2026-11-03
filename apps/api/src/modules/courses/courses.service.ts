@@ -12,6 +12,9 @@ import type {
   CycleUpdateInput,
   Offering,
   OfferingUpsertInput,
+  Programme,
+  ProgrammeInput,
+  ProgrammeUpdateInput,
 } from '@vtmp/shared';
 import { withAudit, type Actor } from '../../core/audit';
 import { prisma } from '../../core/db';
@@ -27,7 +30,8 @@ import {
 } from './rules';
 
 type OfferingRow = Prisma.CourseOfferingGetPayload<object>;
-type CourseRow = Prisma.CourseGetPayload<object>;
+type CourseRow = Prisma.CourseGetPayload<{ include: { programme: true } }>;
+const withProgramme = { programme: true } as const;
 type CycleRow = Prisma.TrainingCycleGetPayload<object>;
 
 const day = (d: Date) => d.toISOString().slice(0, 10);
@@ -61,8 +65,24 @@ function toAdminCourse(c: CourseRow, inUse: CourseUsage = NOT_USED): AdminCourse
     prerequisitesNeedReview: c.prerequisitesNeedReview,
     seatCapacity: c.seatCapacity,
     isActive: c.isActive,
+    programme: c.programme ? { id: c.programme.id, name: c.programme.name } : null,
     inUse,
   };
+}
+
+const toProgramme = (p: { id: string; name: string; sortOrder: number }): Programme => ({
+  id: p.id,
+  name: p.name,
+  sortOrder: p.sortOrder,
+});
+
+/** A course naming a programme that doesn't exist (FK violation) is a 422, not a 500. */
+function programmeMissing(err: unknown): void {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
+    throw AppError.unprocessable('PROGRAMME_NOT_FOUND', 'Choose an existing programme', [
+      { path: 'programmeId', message: 'Unknown programme' },
+    ]);
+  }
 }
 
 function uniqueConflict(err: unknown, code: string, message: string): never {
@@ -153,22 +173,24 @@ export async function catalogue(
   cycleId: string | undefined,
   seatsTaken: (cycleId: string) => Promise<Map<string, number>>,
   batchCapacity: (cycleId: string) => Promise<Map<string, number>> = async () => new Map(),
-): Promise<{ cycle: Cycle | null; courses: CatalogueCourse[] }> {
+): Promise<{ cycle: Cycle | null; courses: CatalogueCourse[]; maxPreferences: number }> {
+  const maxPreferences = await settings.get('enrollment.maxPreferences');
   const id = cycleId ?? (await defaultCycleId());
-  if (!id) return { cycle: null, courses: [] };
+  if (!id) return { cycle: null, courses: [], maxPreferences };
   const cycle = await getCycle(id);
   const now = new Date();
   const [courses, taken] = await Promise.all([
     prisma().course.findMany({
       where: { isActive: true, offerings: { some: { cycleId: id } } },
-      include: { offerings: { where: { cycleId: id } } },
-      orderBy: { title: 'asc' },
+      include: { offerings: { where: { cycleId: id } }, programme: true },
+      orderBy: [{ programme: { sortOrder: 'asc' } }, { title: 'asc' }],
     }),
     seatsTaken(id),
   ]);
   const inBatches = await batchCapacity(id);
   return {
     cycle,
+    maxPreferences,
     courses: courses.map((c) => {
       const capacity = inBatches.get(c.id) ?? c.seatCapacity;
       return {
@@ -181,6 +203,7 @@ export async function catalogue(
         seatCapacity: capacity,
         seatsRemaining: Math.max(0, capacity - (taken.get(c.id) ?? 0)),
         offering: c.offerings[0] ? toOffering(c.offerings[0], now) : null,
+        programme: c.programme ? toProgramme(c.programme) : null,
       };
     }),
   };
@@ -202,6 +225,7 @@ export async function listCourses(
       orderBy: [{ isActive: 'desc' }, { title: 'asc' }],
       include: {
         offerings: { select: { isOpen: true, enrollmentOpensAt: true, enrollmentClosesAt: true } },
+        programme: true,
       },
     }),
     liveBatches(),
@@ -218,7 +242,7 @@ export async function listCourses(
 export async function createCourse(actor: Actor, input: CourseCreateInput): Promise<AdminCourse> {
   try {
     return await withAudit(actor, async (tx, log) => {
-      const course = await tx.course.create({ data: input });
+      const course = await tx.course.create({ data: input, include: withProgramme });
       await log({
         action: 'COURSE_CREATED',
         entity: 'Course',
@@ -228,6 +252,7 @@ export async function createCourse(actor: Actor, input: CourseCreateInput): Prom
       return toAdminCourse(course);
     });
   } catch (err) {
+    programmeMissing(err);
     uniqueConflict(err, 'COURSE_CODE_TAKEN', 'A course with this code already exists');
   }
 }
@@ -239,9 +264,14 @@ export async function updateCourse(
   input: CourseUpdateInput,
 ): Promise<AdminCourse> {
   return withAudit(actor, async (tx, log) => {
-    const before = await tx.course.findUnique({ where: { id } });
+    const before = await tx.course.findUnique({ where: { id }, include: withProgramme });
     if (!before) throw AppError.notFound('Course not found');
-    const course = await tx.course.update({ where: { id }, data: input });
+    const course = await tx.course
+      .update({ where: { id }, data: input, include: withProgramme })
+      .catch((err: unknown) => {
+        programmeMissing(err);
+        throw err;
+      });
     const action =
       input.isActive === false && before.isActive
         ? 'COURSE_DEACTIVATED'
@@ -412,7 +442,7 @@ export async function listOfferings(
   await getCycle(cycleId);
   const now = new Date();
   const courses = await prisma().course.findMany({
-    include: { offerings: { where: { cycleId } } },
+    include: { offerings: { where: { cycleId } }, programme: true },
     orderBy: [{ isActive: 'desc' }, { title: 'asc' }],
   });
   return courses.map((c) => ({
@@ -506,4 +536,51 @@ export async function windowsOpenedBetween(
     byCycle.set(r.cycleId, c);
   }
   return [...byCycle.values()];
+}
+
+// ─── Programmes (groups of courses) ───────────────────────────────────────────
+
+export async function listProgrammes(): Promise<Programme[]> {
+  const rows = await prisma().programme.findMany({
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  });
+  return rows.map(toProgramme);
+}
+
+export async function createProgramme(actor: Actor, input: ProgrammeInput): Promise<Programme> {
+  try {
+    return await withAudit(actor, async (tx, log) => {
+      const p = await tx.programme.create({
+        data: { name: input.name, sortOrder: input.sortOrder ?? 0 },
+      });
+      await log({ action: 'PROGRAMME_CREATED', entity: 'Programme', entityId: p.id, newValue: p });
+      return toProgramme(p);
+    });
+  } catch (err) {
+    uniqueConflict(err, 'PROGRAMME_NAME_TAKEN', 'A programme with this name already exists');
+  }
+}
+
+export async function updateProgramme(
+  actor: Actor,
+  id: string,
+  input: ProgrammeUpdateInput,
+): Promise<Programme> {
+  try {
+    return await withAudit(actor, async (tx, log) => {
+      const before = await tx.programme.findUnique({ where: { id } });
+      if (!before) throw AppError.notFound('Programme not found');
+      const p = await tx.programme.update({ where: { id }, data: input });
+      await log({
+        action: 'PROGRAMME_UPDATED',
+        entity: 'Programme',
+        entityId: id,
+        oldValue: before,
+        newValue: p,
+      });
+      return toProgramme(p);
+    });
+  } catch (err) {
+    uniqueConflict(err, 'PROGRAMME_NAME_TAKEN', 'A programme with this name already exists');
+  }
 }

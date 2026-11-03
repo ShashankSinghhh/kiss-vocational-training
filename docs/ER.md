@@ -14,6 +14,7 @@ erDiagram
   users ||--o{ refresh_tokens : "has"
   users ||--o{ notifications : "receives"
 
+  programmes |o--o{ courses : "groups"
   training_cycles ||--o{ course_offerings : "offers"
   courses ||--o{ course_offerings : "offered in"
   training_cycles ||--o{ enrollments : "for"
@@ -77,6 +78,12 @@ erDiagram
     bool prerequisites_need_review
     int seat_capacity ">0"
     bool is_active
+    uuid programme_id FK
+  }
+  programmes {
+    uuid id PK
+    text name UK
+    int sort_order
   }
   training_cycles {
     uuid id PK
@@ -437,3 +444,12 @@ snapshots on `certificates` and `performance_reports`.
 - Rules added in v1.1 that the services enforce (not the database): BR-23 (no overlapping
   trainings), BR-24 (batch dates and enrollment windows inside the cycle), BR-25 (closing),
   BR-26 (withdrawal), BR-28 (a needed trainer stays active).
+
+## Programmes (2026-11-03)
+
+- Migration `20261103100000_programmes` adds `programmes` (a group of related courses, e.g.
+  *Computer & Digital Skills*; unique `name`, `sort_order` for display) and the optional
+  `courses.programme_id` (FK, `ON DELETE RESTRICT`, indexed). Students choose a cycle, then a
+  programme, then one course in it; each course still runs in its own batches.
+- Programme changes are audited (`PROGRAMME_CREATED`, `PROGRAMME_UPDATED`). How many courses one
+  application may name stays the setting `enrollment.maxPreferences` (seeded as 1 at KISS).

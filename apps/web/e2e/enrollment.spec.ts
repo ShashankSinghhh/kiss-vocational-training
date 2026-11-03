@@ -46,7 +46,16 @@ test.describe('Sprint 3: apply → approve → see APPROVED', () => {
     await expect(cycle.locator('option').nth(1)).toContainText('applications open');
     await cycle.selectOption({ index: 1 });
     await expect(page).toHaveURL(/[?&]cycle=/);
-    const cycleId = new URL(page.url()).searchParams.get('cycle');
+    // A cycle with several programmes asks for one first; pick the first.
+    const programmes = page.getByRole('region', { name: 'Choose a programme' });
+    const applyLink = page.getByRole('link', { name: /^Apply:/ }).first();
+    await expect(programmes.or(applyLink)).toBeVisible();
+    if (await programmes.isVisible()) {
+      await expectNoSeriousA11yViolations(page);
+      await programmes.getByRole('button').first().click();
+      await expect(page).toHaveURL(/[?&]programme=/);
+    }
+    const coursesUrl = new URL(page.url());
     await expectNoSeriousA11yViolations(page);
     await page
       .getByRole('link', { name: /^Apply:/ })
@@ -62,7 +71,7 @@ test.describe('Sprint 3: apply → approve → see APPROVED', () => {
     await expectNoSeriousA11yViolations(page);
 
     // Courses: the applied course says so, and no course offers a second application.
-    await page.goto(`/student/courses?cycle=${cycleId}`);
+    await page.goto(`${coursesUrl.pathname}${coursesUrl.search}`);
     const applied = page.getByTestId('applied-badge');
     await expect(applied).toHaveCount(1);
     await expect(applied).toContainText('Applied · choice 1');
@@ -112,7 +121,7 @@ test.describe('Sprint 3: apply → approve → see APPROVED', () => {
     // Nothing chosen yet: submitting must explain why it can't go through.
     await page.getByRole('button', { name: 'Submit application' }).click();
     await expect(page.getByRole('alert')).toHaveText('Choose at least one course');
-    await page.getByLabel('Choice 1', { exact: true }).selectOption({ index: 1 });
+    await page.getByLabel('Course', { exact: true }).selectOption({ index: 1 });
     await page.getByRole('button', { name: 'Submit application' }).click();
     await expect(page).toHaveURL('/student/enrollment');
 
@@ -133,7 +142,7 @@ test.describe('Sprint 3: apply → approve → see APPROVED', () => {
     await signIn(page, ACCOUNTS.ADMIN);
     await page.goto('/admin/courses');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Courses & cycles');
-    await expect(page.getByRole('cell', { name: 'Solar PV Installer' }).first()).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Coir Work' }).first()).toBeVisible();
     await expectNoSeriousA11yViolations(page);
   });
 

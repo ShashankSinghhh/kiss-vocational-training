@@ -1,7 +1,7 @@
 {
   "catalogue": {
     "title": "Courses",
-    "intro": "Choose a training cycle, browse its vocational courses and apply for up to three in order of preference.",
+    "intro": "Choose a training cycle, then a programme, then the course you want to join.",
     "cycle": "Training cycle",
     "search": "Search courses",
     "openOnly": "Show only courses open for applications",
@@ -22,7 +22,16 @@
       "CLOSED": "applications closed"
     },
     "pickCycle": "Choose a training cycle to see its courses",
-    "pickCycleHint": "Pick the cycle you want to train in from the list above."
+    "pickCycleHint": "Pick the cycle you want to train in from the list above.",
+    "programme": "Programme",
+    "chooseProgramme": "Choose a programme",
+    "pickProgramme": "Choose a programme",
+    "pickProgrammeHint": "Each programme groups related courses. Pick one to see its courses.",
+    "programmeCourses_one": "{{count}} course",
+    "programmeCourses_other": "{{count}} courses",
+    "programmeOpen_one": "{{count}} open for applications",
+    "programmeOpen_other": "{{count}} open for applications",
+    "otherCourses": "Other courses"
   },
   "fields": {
     "code": "Code",
@@ -42,7 +51,9 @@
     "seatsLeft_other": "{{count}} seats left",
     "full": "Full",
     "window": "Enrollment window",
-    "status": "Status"
+    "status": "Status",
+    "programme": "Programme",
+    "sortOrder": "Order"
   },
   "window": {
     "OPEN": "Open",
@@ -123,6 +134,18 @@
       "body": "Students already placed keep training and nothing is deleted, but the course disappears from the catalogue and its open enrollment windows stop taking applications.",
       "usage": "{{batches}} planned or running batches, {{students}} students placed, {{windows}} open enrollment windows",
       "confirm": "Deactivate anyway"
-    }
+    },
+    "programmeHint": "Students choose a programme first, then a course in it.",
+    "noProgramme": "No programme",
+    "allProgrammes": "All programmes",
+    "programmesHeading": "Programmes",
+    "programmesIntro": "Programmes group related courses. Students pick a programme, then one course in it; each course runs in its own batch.",
+    "programmesCaption": "Programmes",
+    "noProgrammes": "No programmes yet. Add one to group your courses.",
+    "addProgramme": "Add programme",
+    "editProgrammeFor": "Edit programme: {{name}}",
+    "activeCourses": "Active courses",
+    "sortOrderHint": "Lower numbers are listed first.",
+    "editProgramme": "Edit"
   }
 }

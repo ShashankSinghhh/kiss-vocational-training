@@ -9,6 +9,9 @@ import type {
   CycleCreateInput,
   Offering,
   OfferingUpsertInput,
+  Programme,
+  ProgrammeInput,
+  ProgrammeUpdateInput,
 } from '@vtmp/shared';
 import { api } from '../../lib/api/client';
 
@@ -39,11 +42,18 @@ export function useOfferings(cycleId: string | undefined) {
   });
 }
 
+export function useAdminProgrammes() {
+  return useQuery({
+    queryKey: ['programmes'],
+    queryFn: ({ signal }) => api.get<Programme[]>('/admin/programmes', { signal }),
+  });
+}
+
 function useRefresh() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      ['admin-courses', 'cycles', 'offerings', 'catalogue'].map((k) =>
+      ['admin-courses', 'cycles', 'offerings', 'catalogue', 'programmes'].map((k) =>
         qc.invalidateQueries({ queryKey: [k] }),
       ),
     );
@@ -102,6 +112,23 @@ export function useUpsertOffering() {
       ...input
     }: OfferingUpsertInput & { cycleId: string; courseId: string }) =>
       api.put<Offering>(`/admin/cycles/${cycleId}/offerings/${courseId}`, input),
+    onSuccess: refresh,
+  });
+}
+
+export function useCreateProgramme() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (input: ProgrammeInput) => api.post<Programme>('/admin/programmes', input),
+    onSuccess: refresh,
+  });
+}
+
+export function useUpdateProgramme() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: ({ id, ...input }: ProgrammeUpdateInput & { id: string }) =>
+      api.patch<Programme>(`/admin/programmes/${id}`, input),
     onSuccess: refresh,
   });
 }

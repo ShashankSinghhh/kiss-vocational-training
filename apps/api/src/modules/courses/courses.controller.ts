@@ -1,6 +1,8 @@
 import type { Request } from 'express';
 import type {
   BulkStatusInput,
+  ProgrammeInput,
+  ProgrammeUpdateInput,
   CourseCreateInput,
   CourseUpdateInput,
   CycleCreateInput,
@@ -49,6 +51,20 @@ export const catalogueCourse = asyncHandler(async (req, res) => {
 
 export const cycles = asyncHandler(async (_req, res) => {
   res.json(await service.listCycles());
+});
+
+export const programmes = asyncHandler(async (_req, res) => {
+  res.json(await service.listProgrammes());
+});
+
+export const createProgramme = asyncHandler(async (req, res) => {
+  res.status(201).json(await service.createProgramme(actor(req), req.body as ProgrammeInput));
+});
+
+export const updateProgramme = asyncHandler(async (req, res) => {
+  res.json(
+    await service.updateProgramme(actor(req), req.params.id!, req.body as ProgrammeUpdateInput),
+  );
 });
 
 export const catalogueCycles = asyncHandler(async (_req, res) => {

@@ -154,11 +154,15 @@ exports[`route inventory (TAD §9, CLAUDE.md rule 2) pins who may call each rout
   "DELETE /api/v1/admin/courses/:id  →  ADMIN",
   "GET /api/v1/admin/cycles  →  ADMIN",
   "POST /api/v1/admin/cycles  →  ADMIN",
+  "GET /api/v1/admin/programmes  →  ADMIN",
+  "POST /api/v1/admin/programmes  →  ADMIN",
+  "PATCH /api/v1/admin/programmes/:id  →  ADMIN",
   "PATCH /api/v1/admin/cycles/:id  →  ADMIN",
   "GET /api/v1/admin/cycles/:cycleId/offerings  →  ADMIN",
   "PUT /api/v1/admin/cycles/:cycleId/offerings/:courseId  →  ADMIN",
   "GET /api/v1/courses  →  any signed-in user",
   "GET /api/v1/courses/:id  →  any signed-in user",
   "GET /api/v1/cycles  →  any signed-in user",
+  "GET /api/v1/programmes  →  any signed-in user",
 ]
 `;
