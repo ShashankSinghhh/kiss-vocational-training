@@ -122,7 +122,7 @@ test.describe('Sprint 4: allocate → trainer sees roster', () => {
     await page.getByRole('tab', { name: 'Trainers' }).click();
     await page
       .getByLabel('Trainer', { exact: true })
-      .selectOption({ label: 'Sushant Mohanty — Electrical installation' });
+      .selectOption({ label: 'Naitik Modi — Computer and digital skills' });
     await page.getByRole('button', { name: 'Assign trainer' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Trainer assigned' })).toBeVisible();
 
@@ -159,7 +159,7 @@ test.describe('Sprint 4: allocate → trainer sees roster', () => {
     await signIn(student, students[0]!.email, students[0]!.password);
     const card = student.getByTestId('student-batch-card');
     await expect(card).toContainText(`${course.title} · Morning`);
-    await expect(card).toContainText('Sushant Mohanty');
+    await expect(card).toContainText('Naitik Modi');
     await expect(card).toContainText('Workshop B');
     await studentContext.close();
   });

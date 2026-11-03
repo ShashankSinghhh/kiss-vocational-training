@@ -413,6 +413,57 @@ audit. Three medium issues are fixed here.
 
 ---
 
+## After Sprint 13 — Programmes and a clean starting database (2026-11-03)
+
+### Built
+- **Programmes** (groups of related courses): new `programmes` table and optional
+  `courses.programme_id` (migration `20261103100000_programmes`, ON DELETE RESTRICT).
+  - API: `GET /programmes` (signed in), `GET/POST /admin/programmes`,
+    `PATCH /admin/programmes/{id}`, audited `PROGRAMME_CREATED` / `PROGRAMME_UPDATED`;
+    409 `PROGRAMME_NAME_TAKEN`. A course takes `programmeId` (422 `PROGRAMME_NOT_FOUND` if unknown).
+  - The catalogue returns each course's programme (ordered by programme, then title) and
+    `maxPreferences` (the setting `enrollment.maxPreferences`).
+  - Admin **Courses & cycles**: a Programmes card (add, rename, order, active-course count), a
+    Programme field on the course form, a Programme column and filter on the course list.
+  - Student **Courses**: cycle → programme (cards, or the Programme dropdown; `?programme=` in
+    the address) → that programme's courses. A cycle whose courses are all in one group skips
+    the step. **Apply** groups courses by programme and, when the limit is 1, asks for one
+    course with no ranking controls.
+- **Clean seed** (`apps/api/src/seed`): the admin; five trainers (`trainer1`–`trainer5`, one per
+  programme); 100 students (`student001`–`student100`); one cycle (`<year>-<yy> Training Cycle`,
+  applications open for 30 days, classes from day 35 for 26 weeks); the five programmes and
+  their 30 courses in the order KISS listed them; one planned *Batch A* per course with its
+  programme's trainer; `enrollment.maxPreferences` = 1. No applications, training, marks,
+  certificates, competencies or opportunities.
+  - Student names pair a first name and a surname from **different** people in the KISS slot
+    list, never recreating a real student's name; no first name or surname repeats across
+    students and trainers. The spreadsheet itself is not in the repository.
+- **Tests:** 4 integration tests for programmes (create/rename/duplicate with audit, filing a
+  course and seeing it in the catalogue, unknown programme, admin-only); seed data tests;
+  access-matrix snapshot updated for the 4 new routes; e2e updated for the new trainer name, the
+  one-course apply form and a seeded course title.
+- **Docs:** user guide (choosing a programme, managing programmes), DEMO.md rewritten for the
+  clean data, README seed section, DEPLOYMENT.md (how to start the live database over), ER.md,
+  openapi.yaml. Screenshots retaken for the screens the clean data can show (`public-*`,
+  `student-dashboard`, `student-courses`, new `student-programme-courses`, `student-apply`,
+  `admin-courses`, `admin-batches`, `admin-dashboard`, `trainer-dashboard`,
+  `phone-student-courses`).
+
+### Deviations
+- Removed `--large` (500 students) and `--remove-old-students`, and the pilot-batch, completion,
+  competency and opportunity demo data, at the team's request for a clean database. The BO-3
+  allocation timing is still covered by the allocation integration tests, which create their own
+  data.
+- `MAX_PREFERENCES` (3) stays the hard ceiling; KISS runs with the setting at 1.
+
+### Known gaps / follow-ups
+- The live database still has the old data until the team runs the reset in DEPLOYMENT.md §4.
+  Old Blob files (certificate PDFs, evidence) stay until deleted in the Vercel dashboard.
+- Screenshots of training, marks, certificates and the passport still show the earlier pilot
+  data (and its names); retake them once a real batch has run.
+
+---
+
 ## After Sprint 13 — Automation of the Round 2 manual steps (2026-11-01)
 
 ### Built

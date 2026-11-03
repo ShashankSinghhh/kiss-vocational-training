@@ -1,44 +1,44 @@
 # 10-minute demo
 
-A walkthrough of the whole journey, enrollment to a verifiable certificate, using only seeded
-data. Screenshots of each screen are in the [user guide](USER_GUIDE.md).
+A walkthrough of the journey from choosing a course to a placed student, on the clean seeded
+data, then the training and certificate screens. Screenshots of each screen are in the
+[user guide](USER_GUIDE.md).
 
 ## Before you start (5 minutes, once)
 
 - **Where:** a local setup (`pnpm db:up`, `pnpm db:migrate`, `pnpm db:seed`, `pnpm dev`, then
   <http://localhost:5173>) or the live site. Local accounts use `Password@123`; the live password
   is shared privately by the team.
-- **A fresh seed** gives the cleanest story: a pilot batch in training (students 021–030), 30
-  pending applications, 3 courses, competencies, opportunities. Locally:
-  `pnpm --filter @vtmp/api db:reset`, then `pnpm db:seed`. Never reset the live database.
+- **The seed** is a clean start: one training cycle open for applications, five programmes with
+  30 courses, one planned batch per course with its trainer, 100 students and no applications,
+  marks or certificates yet. Locally, `pnpm --filter @vtmp/api db:reset` puts it back.
 - **Windows:** one normal window (admin), one private window (student), a phone or the browser's
   phone view (verification).
-- **Accounts:** `admin@kiss-vtmp.test`, `trainer1@kiss-vtmp.test`, `student001@kiss-vtmp.test`
-  (not yet applied), `student021@kiss-vtmp.test` (eligible to complete), `student029@kiss-vtmp.test`
-  (low attendance).
+- **Accounts:** `admin@kiss-vtmp.test`, `trainer1@kiss-vtmp.test` (Computer & Digital Skills),
+  `student001@kiss-vtmp.test` … `student100@kiss-vtmp.test`.
+- **Automatic approval** (optional): in **Enrollments → Automatic approval**, switch it on before
+  the demo so scene 3 approves the moment the student applies.
 
 ## Script
 
 | Time | Scene | Do | Say |
 | --- | --- | --- | --- |
-| 0:00 | **The problem** | Open the sign-in page. Switch the language to ଓଡ଼ିଆ, then back. | Vocational records at KISS are on paper and spreadsheets; certificates can't be checked. One portal, in the students' languages, fast on 3G. |
-| 0:45 | **Apply** | Sign in as `student001`. **Courses** → pick *Solar PV Installer* → **Apply**, rank two courses. **My enrollment** shows *Pending*. | One active application per cycle, only while the window is open (BR-01, BR-02). |
-| 2:00 | **Approve** | Admin window: **Enrollments** → find student001 → **Approve**. Back in the student window the status is *Approved* and the bell has a notification. | Every decision is audited and the student is told at once. Allocation then places approved students by preference rank (BR-03, BR-04). |
-| 3:00 | **Train** | Sign in as `trainer1`. **Sessions** → open the latest *Pilot batch* session → mark one student *Late* → **Save attendance**. Note "you can change this until…". | Attendance is editable for 48 hours, then admin-only with a reason, all logged (BR-06). |
-| 4:00 | **Spot who is struggling** | Admin: **At-risk students** → **Run the check now**. Open *Rakesh Naik* (029): attendance 66.67 % and skill gaps, *High*. Add a *Remedial session* action with a due date. | The nightly check flags students early from attendance, marks and skills (BR-16–18), so trainers act before the end of the course. |
-| 5:30 | **Complete and certify** | Admin: **Completions** → *Pilot batch*. Show 029 failing on attendance. **Approve** *Sanjukta Kujur* (021): certificate issued, grade shown. | Completion needs attendance ≥ 75 %, every mandatory assessment, aggregate ≥ 40 % and the trainer's recommendation (BR-09). Thresholds are settings, not code. |
-| 6:45 | **Verify anywhere** | Open the certificate PDF, scan its QR with the phone (or open `/verify/<ID>`). *Valid*, with name, course, grade, date only. | Employers check a certificate in seconds, without signing in, on an 11 KB page (BR-15, NFR-09). |
-| 7:30 | **Revoke** (optional) | **Certificates** → revoke one with a reason → refresh the verify page: *Revoked*, no reason shown. | Revocation is immediate and audited; the reason stays private. |
-| 8:00 | **Skill Passport** | Student window: sign in as `student021` → **Skill Passport** → **Share passport** (7 days) → open the link in a private window. | Verified skills across all courses, shared with a link the student controls and can revoke. |
-| 8:45 | **Opportunities** | Still as 021: **Opportunities** → match %, missing skills with resources → **I'm interested**. | Skills connect to placements: match % = verified required skills ÷ required skills (BR-22). |
-| 9:15 | **Evidence of it all** | Admin: **Outcome analytics** → **Refresh now** (completion rate rises). **Audit log** → filter entity *Certificate*. | Outcomes per course and batch; every change traceable to who, what and when, and the log can't be edited. |
-| 9:45 | **Close** | Back to the dashboard. | Built and tested: 381 API tests, browser tests on desktop and phone, every requirement traced to its test ([TRACEABILITY.md](TRACEABILITY.md)). |
+| 0:00 | **The problem** | Open the front page, then **Sign in**. Switch the language to ଓଡ଼ିଆ, then back. | Vocational records at KISS are on paper and spreadsheets; certificates can't be checked. One portal, in the students' languages, fast on 3G. |
+| 0:45 | **Programmes** | Admin: **Courses & cycles**. Show the five programmes and their courses, and the cycle's open windows. | Courses are grouped into programmes; each course runs in its own batch with its trainer. |
+| 1:45 | **Apply** | Student window: sign in as `student001`. **Courses** → choose the cycle → **Computer & Digital Skills** → *Computer Training* → **Apply** → **Submit application**. | A student picks one programme, then one course in it: one application per cycle, only while the window is open (BR-01, BR-02). |
+| 3:00 | **Approve** | Admin: **Enrollments**. With automatic approval on, it is already *Approved*; otherwise **Approve** it. The student's bell has a notification. | Rules approve most applications instantly; the rest wait with the reason. Every decision is audited (BR-03). |
+| 4:00 | **Allocate** | Apply as two or three more students (`student002`…), then admin: **Batches → Run allocation** → preview → **Confirm allocation**. Open *Computer Training · Batch A*: the students are placed. | Placement by preference and the tie-break rule, checked for capacity and clashes before anything changes (BR-04). |
+| 5:30 | **Plan the training** | In the batch, **Schedule sessions** → *Weekly schedule* for the term; show the trainer (`trainer1`) and the clash warnings. | Trainer clashes and room clashes are caught before the timetable is saved. |
+| 6:30 | **Train, complete, certify** | Open the user guide's *Follow your training*, *Trainers* and *Completions* screenshots. | Attendance (editable 48 h, then admin-only with a reason), marks, the at-risk check, and completion: attendance ≥ 75 %, every mandatory assessment, aggregate ≥ 40 % and the trainer's recommendation (BR-06, BR-09, BR-16). Thresholds are settings, not code. |
+| 8:00 | **Verify anywhere** | Open `/verify` on the phone. | Employers check a certificate in seconds, without signing in: name, course, grade and date only (BR-15). |
+| 8:45 | **Evidence of it all** | Admin: **Audit log** → filter entity *Enrollment*. | Every change traceable to who, what and when, and the log can't be edited. |
+| 9:30 | **Close** | Back to the dashboard. | Built and tested: API tests, browser tests on desktop and phone, every requirement traced to its test ([TRACEABILITY.md](TRACEABILITY.md)). |
 
 ## If something goes wrong
 
 | Symptom | Fix |
 | --- | --- |
 | The live site is slow on the first click | It was asleep (free hosting): wait 2–3 s; later clicks are fast. |
-| No "Pilot batch" session to open | Use any past session (*View attendance*); editing still works within 48 hours. |
-| 021 is already certified | Approve another of 022–028 instead; all are eligible on a fresh seed. |
+| *You already have an application* | That student has applied; use the next one (`student002`, `student003`, …). |
+| Nothing to allocate | Approve the pending applications first (scene 3). |
 | Locked account after typos | Wait 15 minutes or use another seeded account of the same role. |

@@ -136,7 +136,7 @@ export async function setupActiveBatch(request: APIRequestContext) {
   const trainers = await ok<Array<{ id: string; fullName: string }>>(
     request.get('/api/v1/admin/trainers', h),
   );
-  const trainer = trainers.find((t) => t.fullName === 'Sushant Mohanty')!;
+  const trainer = trainers.find((t) => t.fullName === 'Naitik Modi')!;
   await ok(
     request.post(`/api/v1/admin/batches/${batch.id}/trainers`, {
       ...h,

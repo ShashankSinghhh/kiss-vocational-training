@@ -128,23 +128,22 @@ DATABASE_URL="<neon direct url>" SEED_PASSWORD="<strong demo password>" pnpm db:
 ```
 
 In PowerShell: `$env:DATABASE_URL="…"; $env:SEED_PASSWORD="…"; pnpm db:seed`, then close the
-terminal. The seed is idempotent: it never changes passwords or deletes anything, but it does
-give seeded students 001–040 their current names. Share the demo password only with the
-team and examiners. **Never reuse a real password** (e.g. the database password)
-as the demo password.
+terminal. The seed is idempotent: it never changes passwords or deletes anything. Share the
+demo password only with the team and examiners. **Never reuse a real password** (e.g. the
+database password) as the demo password.
 
-A database seeded **before 2026-10-30** also holds the old seeded students 041–060. Remove them
-once, after the seed above has renamed 001–040:
+**Starting over** (wipes everything, including users, applications, certificates and the audit
+log, then seeds the clean data). Only do this before real use begins. In one PowerShell window:
 
-```bash
-DATABASE_URL="<neon direct url>" pnpm db:seed --remove-old-students
+```powershell
+$env:DATABASE_URL="<neon direct url>"
+$env:SEED_PASSWORD="<demo password>"
+$env:SEED_ADMIN_PASSWORD="<admin password>"
+pnpm --filter @vtmp/api exec prisma migrate reset --force
 ```
 
-A student whose only records are pending applications (as the old seed left them) is deleted
-with those applications. One with anything more (an admin decision, a batch, marks, their own
-actions) keeps the records and is deactivated instead. Each change is in the audit log, and
-running it again changes nothing. Accounts with real emails and students 001–040 are never
-touched.
+then close the window. Files already uploaded to Vercel Blob (certificate PDFs, evidence) are
+not deleted; remove them in the Vercel dashboard (**Storage → Blob**) if you want them gone.
 
 To **change the demo password later**, run the same command with `--reset-passwords`. It sets
 `SEED_PASSWORD` on every seeded account (`@kiss-vtmp.test`: admin, trainers, students), clears

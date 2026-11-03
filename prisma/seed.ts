@@ -1,17 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { runSeed } from '../apps/api/src/seed';
-import { removeOldSeedStudents } from '../apps/api/src/seed/removeOldStudents';
 import { resetSeedPasswords, unlockAdmins } from '../apps/api/src/seed/resetPasswords';
 
 /**
  * Usage:
- *   pnpm db:seed                      40 students (idempotent; renames seeded students 001–040)
- *   pnpm db:seed --large              500 students (BO-3 timing test)
+ *   pnpm db:seed                      clean starting data (idempotent; fills in what is missing)
  *   pnpm db:seed --reset-passwords    set SEED_PASSWORD on every seeded account; with
  *                                     SEED_ADMIN_PASSWORD, the admins get that one instead
  *   pnpm db:seed --unlock-admins      unlock every locked admin account (passwords unchanged)
- *   pnpm db:seed --remove-old-students  remove seeded students 041–060 left by the old 60-student
- *                                     seed (deleted, or deactivated if they have records)
  */
 async function main() {
   const prisma = new PrismaClient();
@@ -34,10 +30,8 @@ async function main() {
       await resetSeedPasswords(prisma, password, log, adminPassword);
     } else if (process.argv.includes('--unlock-admins')) {
       await unlockAdmins(prisma, log);
-    } else if (process.argv.includes('--remove-old-students')) {
-      await removeOldSeedStudents(prisma, log);
     } else {
-      await runSeed(prisma, { large: process.argv.includes('--large'), log });
+      await runSeed(prisma, { log });
     }
     console.log(`Seed complete in ${((Date.now() - started) / 1000).toFixed(1)} s`);
   } finally {

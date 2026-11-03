@@ -95,16 +95,20 @@ whether the API and database are reachable, and
 On a local setup every seeded account uses the password `Password@123`. The live demo uses the
 same emails with a different, private password.
 
-| Role    | Email                                                                          |
-| ------- | ------------------------------------------------------------------------------ |
-| Admin   | `admin@kiss-vtmp.test`                                                         |
-| Trainer | `trainer1@kiss-vtmp.test` … `trainer4@kiss-vtmp.test`                          |
-| Student | `student001@kiss-vtmp.test` … `student040@kiss-vtmp.test` (500 with `--large`) |
+| Role    | Email                                                                     |
+| ------- | ------------------------------------------------------------------------- |
+| Admin   | `admin@kiss-vtmp.test`                                                    |
+| Trainer | `trainer1@kiss-vtmp.test` … `trainer5@kiss-vtmp.test` (one per programme) |
+| Student | `student001@kiss-vtmp.test` … `student100@kiss-vtmp.test`                 |
 
-The seed also creates an open training cycle, three courses (Electrician — Domestic, Solar PV
-Installer, Tailoring & Garment Making) with open enrollment windows, and every Setting at its
-default. It is idempotent: run it again any time. `pnpm db:seed --large` adds students up to
-500 for the allocation timing test. Database tables are described in [docs/ER.md](docs/ER.md). `--reset-passwords` (with `SEED_PASSWORD`) sets a new password on every seeded account.
+The seed is a clean starting point: one training cycle open for applications; five programmes
+(Computer & Digital Skills, Art, Craft & Handicrafts, Manufacturing & Production, Agriculture &
+Livelihood, Professional & Life Skills) with 30 courses and open enrollment windows; one
+planned batch per course with its programme's trainer; and every Setting at its default, except
+that a student applies for one course. There are no applications, marks or certificates. It is
+idempotent: run it again any time; `pnpm --filter @vtmp/api db:reset` starts over. Database
+tables are described in [docs/ER.md](docs/ER.md). `--reset-passwords` (with `SEED_PASSWORD`)
+sets a new password on every seeded account.
 
 Sign in at http://localhost:5173 with any seed account: each role lands on its own dashboard
 (`/student`, `/trainer`, `/admin`).

@@ -1,82 +1,41 @@
 import bcrypt from 'bcrypt';
 import { Role, type PrismaClient } from '@prisma/client';
-import { audit } from '../core/audit';
 import { SETTINGS, SETTING_KEYS } from '../core/settings/registry';
-import { ADMIN, COURSES, SEED_ADMIN_PASSWORD, SEED_PASSWORD, TRAINERS, makeStudents } from './data';
-import { seedCompetencies } from './competency';
-import { seedOpportunities } from './opportunities';
-import { seedCompletionReadiness, seedTraining } from './training';
+import {
+  ADMIN,
+  COURSES,
+  PROGRAMMES,
+  SEED_ADMIN_PASSWORD,
+  SEED_PASSWORD,
+  TRAINERS,
+  makeStudents,
+} from './data';
 
-/**
- * Students from this number on get a pending application, so the admin review screen has data.
- * Students before it stay free to apply in demos and end-to-end tests.
- */
-export const APPLICANTS_FROM = 31;
-
-/**
- * One pending application per applicant with 1–3 ranked preferences, rotating through the
- * courses. Skips students who already have an application in the cycle. Each new application
- * gets its ENROLLMENT_SUBMITTED audit row, like one made through the API.
- */
-async function seedApplications(
-  prisma: PrismaClient,
-  cycleId: string,
-  students: ReturnType<typeof makeStudents>,
-): Promise<number> {
-  const courses = await prisma.course.findMany({
-    where: { code: { in: COURSES.map((c) => c.code) } },
-    orderBy: { code: 'asc' },
-    select: { id: true },
-  });
-  const applicants = students.filter((s) => s.n >= APPLICANTS_FROM && s.n <= DEFAULT_STUDENTS);
-  const rows = await prisma.student.findMany({
-    where: { rollNo: { in: applicants.map((s) => s.rollNo) } },
-    select: { id: true, rollNo: true, enrollments: { where: { cycleId }, select: { id: true } } },
-  });
-  let created = 0;
-  for (const [i, student] of rows.entries()) {
-    if (student.enrollments.length > 0) continue;
-    const count = (i % 3) + 1;
-    const courseIds = Array.from(
-      { length: count },
-      (_, k) => courses[(i + k) % courses.length]!.id,
-    );
-    await prisma.$transaction(async (tx) => {
-      const e = await tx.enrollment.create({
-        data: {
-          studentId: student.id,
-          cycleId,
-          submittedAt: new Date(Date.now() - (rows.length - i) * 60_000),
-          preferences: {
-            create: courseIds.map((courseId, rank) => ({ courseId, rank: rank + 1 })),
-          },
-        },
-      });
-      await audit.record(tx, {
-        userId: null,
-        action: 'ENROLLMENT_SUBMITTED',
-        entity: 'Enrollment',
-        entityId: e.id,
-        newValue: { status: 'PENDING', courseIds, by: 'seed' },
-      });
-    });
-    created++;
-  }
-  return created;
-}
-
-export const DEFAULT_STUDENTS = 40;
-export const LARGE_STUDENTS = 500;
 const BCRYPT_COST = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+/** Classes start this long after seeding, so the application window has time to run. */
+const CLASSES_START_IN_DAYS = 35;
+/** The cycle is long enough for the longest course (24 weeks). */
+const CYCLE_WEEKS = 26;
+
+/**
+ * Settings this deployment uses instead of the registry default: at KISS a student applies for
+ * one course (chosen within a programme), not three ranked ones.
+ */
+const SETTING_OVERRIDES: Partial<Record<(typeof SETTING_KEYS)[number], unknown>> = {
+  'enrollment.maxPreferences': 1,
+};
 
 export interface SeedOptions {
-  /** Seed 500 students instead of 40 (BO-3 allocation timing test). */
-  large?: boolean;
   log?: (message: string) => void;
 }
 
 /**
+ * A clean starting database: settings, the admin, one trainer per programme, 100 students,
+ * one training cycle open for applications, the programmes and their courses, and one planned
+ * batch per course with its trainer. No applications, marks or certificates.
+ *
  * Idempotent: every write is an upsert or createMany(skipDuplicates), so running it again only
  * fills in what is missing. It never overwrites a Setting an admin has changed.
  */
@@ -86,7 +45,10 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
 
   // Settings: insert defaults only for keys that have no row yet.
   const settings = await prisma.setting.createMany({
-    data: SETTING_KEYS.map((key) => ({ key, value: SETTINGS[key].default as never })),
+    data: SETTING_KEYS.map((key) => ({
+      key,
+      value: (key in SETTING_OVERRIDES ? SETTING_OVERRIDES[key] : SETTINGS[key].default) as never,
+    })),
     skipDuplicates: true,
   });
   log(`settings: ${settings.count} added (${SETTING_KEYS.length} defined)`);
@@ -121,7 +83,7 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
   }
   log(`trainers: ${TRAINERS.length}`);
 
-  const students = makeStudents(opts.large ? LARGE_STUDENTS : DEFAULT_STUDENTS);
+  const students = makeStudents();
   await prisma.user.createMany({
     data: students.map((s) => ({
       email: s.email,
@@ -133,16 +95,8 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
   });
   const users = await prisma.user.findMany({
     where: { email: { in: students.map((s) => s.email) } },
-    select: { id: true, email: true, fullName: true },
+    select: { id: true, email: true },
   });
-  // A database seeded before the names were made unique gets them now (only these accounts).
-  const renamed = students.filter(
-    (s) => users.find((u) => u.email === s.email)?.fullName !== s.fullName,
-  );
-  for (const s of renamed) {
-    await prisma.user.update({ where: { email: s.email }, data: { fullName: s.fullName } });
-  }
-  if (renamed.length) log(`students renamed: ${renamed.length}`);
   const userIdByEmail = new Map(users.map((u) => [u.email, u.id]));
   await prisma.student.createMany({
     data: students.map((s) => ({
@@ -157,88 +111,81 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
 
   const now = new Date();
   const year = now.getUTCFullYear();
+  const name = `${year}-${String(year + 1).slice(2)} Training Cycle`;
+  const startsOn = new Date(now.getTime() + CLASSES_START_IN_DAYS * DAY_MS);
   const cycle = await prisma.trainingCycle.upsert({
-    where: { name: `${year}-${String(year + 1).slice(2)} Cycle 1` },
-    create: {
-      name: `${year}-${String(year + 1).slice(2)} Cycle 1`,
-      startsOn: new Date(now.getTime() + 35 * DAY_MS),
-      endsOn: new Date(now.getTime() + 35 * DAY_MS + 16 * 7 * DAY_MS),
-    },
+    where: { name },
+    create: { name, startsOn, endsOn: new Date(startsOn.getTime() + CYCLE_WEEKS * WEEK_MS) },
     update: {},
   });
   log(`cycle: ${cycle.name}`);
 
-  for (const c of COURSES) {
-    const course = await prisma.course.upsert({
-      where: { code: c.code },
-      create: { ...c },
+  let batches = 0;
+  for (const [i, p] of PROGRAMMES.entries()) {
+    const programme = await prisma.programme.upsert({
+      where: { name: p.name },
+      create: { name: p.name, sortOrder: (i + 1) * 10 },
       update: {},
     });
-    const existing = await prisma.courseOffering.findUnique({
-      where: { courseId_cycleId: { courseId: course.id, cycleId: cycle.id } },
+    const trainer = await prisma.trainer.findUniqueOrThrow({
+      where: { employeeCode: TRAINERS[i]!.employeeCode },
     });
-    if (!existing) {
-      await prisma.courseOffering.create({
+    for (const c of p.courses) {
+      const course = await prisma.course.upsert({
+        where: { code: c.code },
+        create: { ...c, programmeId: programme.id },
+        update: {},
+      });
+      const existing = await prisma.courseOffering.findUnique({
+        where: { courseId_cycleId: { courseId: course.id, cycleId: cycle.id } },
+      });
+      if (!existing) {
+        await prisma.courseOffering.create({
+          data: {
+            courseId: course.id,
+            cycleId: cycle.id,
+            enrollmentOpensAt: new Date(now.getTime() - DAY_MS),
+            enrollmentClosesAt: new Date(now.getTime() + 30 * DAY_MS),
+            isOpen: true,
+          },
+        });
+      } else if (existing.enrollmentClosesAt < now) {
+        // Keep the demo usable: a re-seed reopens a window that has lapsed on a dev machine.
+        await prisma.courseOffering.update({
+          where: { id: existing.id },
+          data: { enrollmentClosesAt: new Date(now.getTime() + 30 * DAY_MS), isOpen: true },
+        });
+      }
+
+      // One planned batch per course, its programme's trainer assigned, no students yet.
+      const batchName = 'Batch A';
+      const batch = await prisma.batch.findUnique({
+        where: {
+          courseId_cycleId_name: { courseId: course.id, cycleId: cycle.id, name: batchName },
+        },
+      });
+      if (batch) continue;
+      await prisma.batch.create({
         data: {
           courseId: course.id,
           cycleId: cycle.id,
-          enrollmentOpensAt: new Date(now.getTime() - DAY_MS),
-          enrollmentClosesAt: new Date(now.getTime() + 30 * DAY_MS),
-          isOpen: true,
+          name: batchName,
+          capacity: c.seatCapacity,
+          startDate: cycle.startsOn,
+          endDate: new Date(cycle.startsOn.getTime() + c.durationWeeks * WEEK_MS),
+          venue: `${p.name} block`,
+          trainers: { create: { trainerId: trainer.id } },
         },
       });
-    } else if (existing.enrollmentClosesAt < now) {
-      // Keep the demo usable: a re-seed reopens a window that has lapsed on a dev machine.
-      await prisma.courseOffering.update({
-        where: { id: existing.id },
-        data: { enrollmentClosesAt: new Date(now.getTime() + 30 * DAY_MS), isOpen: true },
-      });
+      batches++;
     }
   }
+  log(`programmes: ${PROGRAMMES.length}`);
   log(`courses: ${COURSES.length} with open enrollment windows`);
-
-  const applications = await seedApplications(prisma, cycle.id, students);
-  log(`applications: ${applications} added (students ${APPLICANTS_FROM}+ have one pending)`);
-
-  // One planned batch per course with a matching trainer, ready for an allocation demo.
-  const trainerFor: Record<string, string> = {
-    'ELEC-DOM': TRAINERS[0]!.employeeCode,
-    'SOLAR-PV': TRAINERS[1]!.employeeCode,
-    'TAIL-GMT': TRAINERS[2]!.employeeCode,
-  };
-  let batches = 0;
-  for (const c of COURSES) {
-    const course = await prisma.course.findUniqueOrThrow({ where: { code: c.code } });
-    const exists = await prisma.batch.findUnique({
-      where: { courseId_cycleId_name: { courseId: course.id, cycleId: cycle.id, name: 'Batch A' } },
-    });
-    if (exists) continue;
-    const trainer = await prisma.trainer.findUniqueOrThrow({
-      where: { employeeCode: trainerFor[c.code]! },
-    });
-    await prisma.batch.create({
-      data: {
-        courseId: course.id,
-        cycleId: cycle.id,
-        name: 'Batch A',
-        capacity: 15,
-        startDate: cycle.startsOn,
-        endDate: cycle.endsOn,
-        venue: `${c.title.split(' ')[0]} workshop`,
-        trainers: { create: { trainerId: trainer.id } },
-      },
-    });
-    batches++;
-  }
   log(`batches: ${batches} added ("Batch A" per course, trainer assigned, no students yet)`);
 
-  await seedTraining(prisma, log);
-  await seedCompletionReadiness(prisma, log);
-  await seedCompetencies(prisma, log);
-  await seedOpportunities(prisma, log);
-
-  // F20: rebuild the outcome views so a fresh database shows figures straight away (production
-  // refreshes them nightly).
+  // F20: build the outcome views so the analytics page works straight away (they stay empty
+  // until batches complete; production refreshes them nightly).
   await prisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW analytics_batch_outcomes');
   await prisma.$executeRawUnsafe('REFRESH MATERIALIZED VIEW analytics_course_competency');
   // Record it as the refresh job does, so the page shows "Last refreshed" instead of "never".
@@ -250,5 +197,10 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
       WHERE job_locks.locked_until < now()`;
   log('analytics: outcome views refreshed');
 
-  return { students: students.length, trainers: TRAINERS.length, courses: COURSES.length };
+  return {
+    students: students.length,
+    trainers: TRAINERS.length,
+    programmes: PROGRAMMES.length,
+    courses: COURSES.length,
+  };
 }

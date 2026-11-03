@@ -51,7 +51,7 @@ test.describe('Sprint 10: early intervention and the audit log', () => {
     await page.getByRole('button', { name: 'Add action' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Type').selectOption('EXTRA_SESSION');
-    await dialog.getByLabel('Owner').selectOption({ label: 'Sushant Mohanty (Trainer)' });
+    await dialog.getByLabel('Owner').selectOption({ label: 'Naitik Modi (Trainer)' });
     await dialog.getByLabel('Note (staff only)').fill('Staff-only note about the student');
     await dialog.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Action recorded' })).toBeVisible();
@@ -64,7 +64,7 @@ test.describe('Sprint 10: early intervention and the audit log', () => {
     await signIn(student, absent!.email, absent!.password);
     const card = student.getByTestId('my-risk-card');
     await expect(card).toContainText("Let's get you back on track");
-    await expect(card).toContainText('Extra session with Sushant Mohanty');
+    await expect(card).toContainText('Extra session with Naitik Modi');
     await expect(card).not.toContainText('Staff-only');
     await expect(card).not.toContainText('risk');
     await expectNoSeriousA11yViolations(student);
@@ -77,7 +77,7 @@ test.describe('Sprint 10: early intervention and the audit log', () => {
     await admin.goto('/admin/audit');
     await admin.getByLabel('Action').selectOption('INTERVENTION_ACTION_CREATED');
     const row = admin.getByRole('row').filter({ hasText: 'INTERVENTION_ACTION_CREATED' }).first();
-    await expect(row).toContainText('Sushant Mohanty');
+    await expect(row).toContainText('Naitik Modi');
     await row.getByRole('button', { name: 'Show changes' }).click();
     await expect(admin.getByText('EXTRA_SESSION').first()).toBeVisible();
     await expectNoSeriousA11yViolations(admin);

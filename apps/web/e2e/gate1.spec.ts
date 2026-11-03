@@ -129,7 +129,7 @@ test.describe('GATE 1: Release 1 workflow end to end', () => {
     await page.getByRole('tab', { name: 'Trainers' }).click();
     await page
       .getByLabel('Trainer', { exact: true })
-      .selectOption({ label: 'Sushant Mohanty — Electrical installation' });
+      .selectOption({ label: 'Naitik Modi — Computer and digital skills' });
     await page.getByRole('button', { name: 'Assign trainer' }).click();
     await toast(page, 'Trainer assigned');
     // Many test batches share the seeded trainer at these times (see addCoTrainer).

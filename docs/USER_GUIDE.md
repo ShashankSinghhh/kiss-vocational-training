@@ -58,18 +58,23 @@ Your application status, attendance, current aggregate and projected grade at a 
 
 1. On **Courses**, choose a **Training cycle** from the list (nothing is chosen for you; only
    cycles that offer courses and haven't ended are listed). Each says whether applications are
-   open, opening soon or closed, and the open ones come first. Its courses appear, with seats
-   and whether applications are open.
-2. Open a course for details, then **Apply**. Rank up to three courses in order of
-   preference.
-3. **My enrollment** shows your application status (Pending, Approved, Waitlisted, Allocated,
+   open, opening soon or closed, and the open ones come first.
+2. Choose a **programme**, such as *Computer & Digital Skills* or *Art, Craft & Handicrafts*.
+   Each programme groups related courses; its card says how many are open for applications.
+   Its courses appear, with seats and whether applications are open.
+
+   ![Courses in a programme](screenshots/student-programme-courses.jpg)
+
+3. Open a course for details, then **Apply** and **Submit application**. You apply for one
+   course per cycle (the training office can allow up to three ranked choices in Settings).
+4. **My enrollment** shows your application status (Pending, Approved, Waitlisted, Allocated,
    Rejected) and the reason if it was rejected. You can change preferences or withdraw while it
    is pending.
 
 You can have one active application per training cycle, and only while the window is open.
 Once you are approved, placed or training in one cycle, you can't apply for another cycle whose
 dates overlap it.
-Once you have applied, **Courses** marks each course you chose with **Applied · choice N** and
+Once you have applied, **Courses** marks the course you chose with **Applied · choice 1** and
 the application's status, with a link to your application instead of **Apply**.
 
 ### Follow your training
@@ -203,7 +208,14 @@ columns `email`, `fullName`, `rollNo`, `cgpa` and, if you have it, `phone` (up t
 time). Give a first password, press **Check file** and fix any row it lists (a bad email or
 CGPA, a duplicate, an email or roll number already used); nothing is created until every row is
 right. Then **Import**: every student signs in with that password and must choose their own.
-**Courses & cycles** manages courses, training cycles and the enrollment window of each course.
+**Courses & cycles** manages programmes, courses, training cycles and the enrollment window of
+each course. **Programmes** group related courses (students choose a programme, then a course
+in it): **Add programme**, rename one, or change its **Order** (lower numbers are listed
+first). Each course picks its programme in its form, and the course list can be filtered by
+programme. Each course runs in its own batch (see *Batches*).
+
+![Courses & cycles](screenshots/admin-courses.jpg)
+
 Untick *A person checks the prerequisites before approval* on a course whose prerequisites every
 applicant meets (for example "Class 8 pass"), so automatic approval can approve it. Once a
 course has batches in a cycle, students see seats left in those batches.
@@ -224,7 +236,7 @@ no record ever loses its student, trainer or course.
    the rules is approved the moment the student submits it, and the student is told at once.
    **Approve eligible pending applications** applies the rules to what is already waiting.
 2. **Enrollments**: the applications that don't meet the rules wait in the list with the reason
-   ("CGPA 5.20 is below 6.00", "Electrician has prerequisites"). Approve, waitlist or reject
+   ("CGPA 5.20 is below 6.00", "Medical Attendant has prerequisites"). Approve, waitlist or reject
    them, one at a time or in bulk (rejection needs a reason the student sees). The latest
    applications are at the top.
 3. **Batches → Run allocation**: preview the automatic allocation (by preference rank, then the
