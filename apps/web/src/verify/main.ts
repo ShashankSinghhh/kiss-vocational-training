@@ -88,12 +88,12 @@ const form = el(
 const result = el('section', { className: 'result', hidden: true });
 result.setAttribute('aria-live', 'polite');
 
-document.title = `${t('title')} · KISS VTMP`;
+document.title = `${t('title')} · KISS SkillBridge`;
 document.body.append(
   el(
     'main',
     {},
-    el('p', { className: 'brand', textContent: 'KISS VTMP' }),
+    el('p', { className: 'brand', textContent: 'KISS SkillBridge' }),
     el('h1', { textContent: t('title') }),
     el('p', { className: 'intro', textContent: t('intro') }),
     form,

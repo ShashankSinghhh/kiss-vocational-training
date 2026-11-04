@@ -1,4 +1,7 @@
-# KISS Vocational Training Management Portal (VTMP)
+# KISS SkillBridge
+
+The vocational training portal of KISS (formerly _KISS Vocational Training Management Portal_,
+VTMP; package and database names keep `vtmp`).
 
 Takes every vocational student at KISS from enrollment to a verifiable certificate and Skill
 Passport. Software Engineering project by

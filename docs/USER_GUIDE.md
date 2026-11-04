@@ -1,6 +1,6 @@
 # User guide
 
-How to use the KISS Vocational Training Management Portal, one section per role. Every
+How to use KISS SkillBridge, the vocational training portal of KISS, one section per role. Every
 screenshot is taken automatically from a freshly seeded copy of the app
 (`pnpm --filter @vtmp/web docs:screens`), so it matches what you see.
 

@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: KISS VTMP API
+  title: KISS SkillBridge API
   version: 0.1.0
   description: |
-    KISS Vocational Training Management Portal API. All endpoints live under /api/v1 and
+    KISS SkillBridge (vocational training portal) API. All endpoints live under /api/v1 and
     return JSON. Errors always use the Error schema below.
 
     A user whose password an admin set (a new account created with mustChangePassword, or a

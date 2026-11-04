@@ -17,7 +17,9 @@ export function Wordmark() {
         K
       </span>
       <span className="flex flex-col leading-tight">
-        <span className="text-sm font-semibold tracking-wide text-slate-900">KISS</span>
+        <span className="text-sm font-semibold tracking-wide text-slate-900">
+          {t('common:appName')}
+        </span>
         <span className="text-xs text-slate-600">{t('brand.subtitle')}</span>
       </span>
     </Link>

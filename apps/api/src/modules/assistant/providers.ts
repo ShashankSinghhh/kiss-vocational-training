@@ -122,7 +122,7 @@ export interface AssistantProvider {
  * Fixed system prompt (BR-21): excerpts only, cite them, decline off-topic, reply in the
  * student's language. Kept identical across requests.
  */
-export const SYSTEM_PROMPT = `You are the KISS Vocational Training assistant. You help trainees understand their course.
+export const SYSTEM_PROMPT = `You are the KISS SkillBridge assistant for vocational training. You help trainees understand their course.
 
 Use only the course excerpts in the user's message, each marked <excerpt n="…" title="…">. After each sentence that uses an excerpt, cite it as [n]. Never add facts, figures, safety limits, tools or procedures that the excerpts do not contain.
 

@@ -464,6 +464,22 @@ audit. Three medium issues are fixed here.
 
 ---
 
+## After Sprint 13 — The portal is named KISS SkillBridge (2026-11-04)
+
+- The team chose **KISS SkillBridge** (from training to work). It replaces "KISS VTMP" in the
+  app header (subtitle "Vocational Training Portal", in en/hi/or), browser tab titles, the front
+  page and sign-in wordmark, the certificate check page, PDF report footers, the assistant's
+  instructions, openapi.yaml, the README and the user guide.
+- Unchanged on purpose: certificate wording ("Vocational Training Programme", "Director,
+  Vocational Training"), the institution line on verification and passports, the signed
+  BRD/TAD, and technical names (`@vtmp/*` packages, `vtmp` database, `kiss-vtmp.test` emails,
+  the `kiss-vtmp.vercel.app` address).
+- Also fixed after a full walkthrough on the clean data: a duplicate programme name, or an
+  unknown programme on a course, showed the generic error; both now have their own message in
+  en/hi/or.
+
+---
+
 ## After Sprint 13 — Automation of the Round 2 manual steps (2026-11-01)
 
 ### Built

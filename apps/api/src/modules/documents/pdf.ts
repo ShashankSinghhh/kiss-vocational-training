@@ -157,7 +157,7 @@ export function pageFooters(doc: PDFKit.PDFDocument, generatedAt: Date) {
       .fontSize(7.5)
       .fillColor(MUTED)
       .text(
-        `Generated ${generatedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC · KISS VTMP · Page ${i - range.start + 1} of ${range.count}`,
+        `Generated ${generatedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC · KISS SkillBridge · Page ${i - range.start + 1} of ${range.count}`,
         doc.page.margins.left,
         y,
         { width: doc.page.width - doc.page.margins.left - doc.page.margins.right, align: 'center' },
