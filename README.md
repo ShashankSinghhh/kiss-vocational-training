@@ -8,6 +8,7 @@ Passport. Software Engineering project by
 [@ShashankSinghhh](https://github.com/ShashankSinghhh) and
 [@ArnavAmbasta-05](https://github.com/ArnavAmbasta-05).
 
+- **Project report:** [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) (overview for the presentation)
 - **Business rules:** [docs/BRD.md](docs/BRD.md) (v1.2: BR-01…BR-28, BRQ-x.y, NFRs)
 - **Architecture:** [docs/TAD.md](docs/TAD.md) (v1.2) · **Database:** [docs/ER.md](docs/ER.md) ·
   **Changes since release:** [docs/CHANGELOG.md](docs/CHANGELOG.md)
