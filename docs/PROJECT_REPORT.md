@@ -403,7 +403,7 @@ before the code changes.
   the translation and traceability checks, the production build and a page-size budget.
 - Code reviewed through pull requests.
 - Requirements, design and test documents versioned with the code (BRD and TAD v1.0 → v1.2,
-  [CHANGELOG.md](CHANGELOG.md)).
+  [CHANGELOG.md](internal/CHANGELOG.md)).
 
 ### 10.3 Security
 
@@ -430,7 +430,7 @@ grouped into three releases, each closed by an acceptance gate.
 
 Every sprint ended with the same definition of done: lint, type check and all tests pass; new
 endpoints documented; demo data updated; all text translatable; and an entry in the sprint log
-([PROGRESS.md](PROGRESS.md)).
+([PROGRESS.md](internal/PROGRESS.md)).
 
 ### 11.2 Timeline
 
@@ -509,7 +509,7 @@ runs as part of the build. Because the API is serverless, nothing is kept in mem
 requests: rate limits live in the database and scheduled jobs take a database lock. The running
 cost is zero. The live database starts clean: 5 programmes, 30 courses, one training cycle open
 for applications, one batch per course with its trainer, and 100 students. See
-[DEPLOYMENT.md](DEPLOYMENT.md).
+[DEPLOYMENT.md](internal/DEPLOYMENT.md).
 
 ### 12.2 Maintenance after release
 
@@ -561,10 +561,10 @@ are what let a team of two deliver a system of this size that works correctly.
 3. Pankaj Jalote, *Software Project Management in Practice*, Pearson Education.
 4. IEEE Std 830-1998, *Recommended Practice for Software Requirements Specifications*.
 
-**Project documents:** [User guide](USER_GUIDE.md) · [Demo script](DEMO.md) ·
+**Project documents:** [User guide](USER_GUIDE.md) · [Demo script](internal/DEMO.md) ·
 [Requirements (BRD)](BRD.md) · [Architecture (TAD)](TAD.md) · [Database (ER)](ER.md) ·
-[Test plan](TEST_PLAN.md) · [Traceability](TRACEABILITY.md) · [Deployment](DEPLOYMENT.md) ·
-[Changelog](CHANGELOG.md) · [Sprint log](PROGRESS.md) ·
+[Test plan](TEST_PLAN.md) · [Traceability](TRACEABILITY.md) · [Deployment](internal/DEPLOYMENT.md) ·
+[Changelog](internal/CHANGELOG.md) · [Sprint log](internal/PROGRESS.md) ·
 [API contract](../apps/api/openapi.yaml) · [Presentation](KISS_SkillBridge_Presentation.pptx)
 
 ## 16. Appendix: running the project

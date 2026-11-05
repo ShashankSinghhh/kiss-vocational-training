@@ -48,7 +48,7 @@ be built.
                                       Each change came from the
                                       post-release site test run (Round
                                       1) or the logic review (Round 2),
-                                      recorded in PROGRESS.md.
+                                      recorded in internal/PROGRESS.md.
 
   1.2 (2026-11-01)                    Automation: Section 8.2 adds
                                       BRQ-1.5, 3.6, 4.7, 4.8, 7.4, 9.5,

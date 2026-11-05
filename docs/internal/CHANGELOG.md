@@ -1,13 +1,14 @@
 # Changelog
 
 What changed in the portal, newest first. The reasons and the details of each change are in
-[PROGRESS.md](PROGRESS.md); the rules are in [BRD.md](BRD.md) (v1.3) and the design in
-[TAD.md](TAD.md) (v1.2, Amendment 3). IDs in brackets are the review findings (S, A, D, T, P from
+[PROGRESS.md](PROGRESS.md); the rules are in [BRD.md](../BRD.md) (v1.3) and the design in
+[TAD.md](../TAD.md) (v1.2, Amendment 3). IDs in brackets are the review findings (S, A, D, T, P from
 the site test run; L from the logic review) and the BRD requirements and rules they touch.
 
 ## v1.3 — open to every student, programmes, a demo cycle (2026-11-05)
 
 ### Changed
+
 - **CGPA removed** (BR-04, BRQ-3.5). Vocational training is open to every student, so academic
   marks are no longer recorded or used: no CGPA on Add user or in the CSV import (an old file
   with a CGPA column still imports), no minimum-CGPA rule in automatic approval, and seats go by
@@ -17,17 +18,20 @@ the site test run; L from the logic review) and the BRD requirements and rules t
 - **Name:** the portal is KISS SkillBridge.
 
 ### Added
+
 - `pnpm db:seed --demo-cycle` / `--remove-demo-cycle`: a past demo cycle with a full term of
   history (certificates, failures, at-risk students, the application queue) for demonstrations.
 
 ## v1.2.2 — low-severity security fixes (2026-11-02)
 
 ### Fixed
+
 - `%` and `_` in the user, application and certificate searches are matched as text, not as
   wildcards.
 - A request body the server can't read gets 413, 415 or 400 instead of 500.
 
 ### Added
+
 - `SEED_ADMIN_PASSWORD`: the demo admin can have its own password, so the shared demo password
   no longer opens the admin account.
 - `pnpm db:seed --unlock-admins`: unlocks a locked admin account straight away.
@@ -35,6 +39,7 @@ the site test run; L from the logic review) and the BRD requirements and rules t
 ## v1.2.1 — security fixes (2026-11-02)
 
 ### Fixed
+
 - Wrong passwords sent at the same moment now all count, so the 5-attempt lock can't be dodged
   by sending guesses in parallel (TC-02).
 - Every page now sends browser-protection headers (content security policy, no framing by other

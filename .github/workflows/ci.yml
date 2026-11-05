@@ -125,7 +125,7 @@ jobs:
 
   # Vercel deploys main itself (GitHub integration; migrations run first in the production build,
   # scripts/vercel-build.sh). This job then checks the live site. It runs only once the repository
-  # variable PUBLIC_BASE_URL is set (docs/DEPLOYMENT.md), and E2E_PASSWORD is a secret.
+  # variable PUBLIC_BASE_URL is set (docs/internal/DEPLOYMENT.md), and E2E_PASSWORD is a secret.
   deployed-smoke:
     name: Smoke test the deployed site
     needs: build

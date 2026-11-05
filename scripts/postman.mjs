@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(fileURLToPath(import.meta.url), '..', '..');
-const out = join(root, 'docs', 'postman', 'kiss-vtmp.postman_collection.json');
+const out = join(root, 'docs', 'internal', 'postman', 'kiss-vtmp.postman_collection.json');
 
 execFileSync(
   process.platform === 'win32' ? 'npx.cmd' : 'npx',

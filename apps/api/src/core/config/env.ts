@@ -24,7 +24,7 @@ export const EnvSchema = z.object({
   ),
   PORT: z.coerce.number().int().positive().default(4000),
   // Proxies in front of the API in production (host load balancer + web-host rewrite proxy),
-  // so req.ip is the real client for per-IP rate limits. See docs/DEPLOYMENT.md.
+  // so req.ip is the real client for per-IP rate limits. See docs/internal/DEPLOYMENT.md.
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
   // Where named (security) rate limits keep their counts. Serverless instances share no memory,
   // so production defaults to postgres; local dev and tests default to memory.

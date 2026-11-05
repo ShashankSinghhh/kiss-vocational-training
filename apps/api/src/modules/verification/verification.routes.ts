@@ -26,7 +26,7 @@ export function publicRoutes(): Router {
   );
 
   // F15: certificate verification. Revalidated on every view (ETag → cheap 304s) so that a
-  // revocation shows at once (BRQ-15.4); see PROGRESS.md, Sprint 9 deviations.
+  // revocation shows at once (BRQ-15.4); see docs/internal/PROGRESS.md, Sprint 9 deviations.
   router.get(
     '/verify/:code',
     asyncHandler(async (req, res) => {

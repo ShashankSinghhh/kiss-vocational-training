@@ -1,165 +1,82 @@
 # KISS SkillBridge
 
-The vocational training portal of KISS (formerly _KISS Vocational Training Management Portal_,
-VTMP; package and database names keep `vtmp`).
+**A web portal that takes every vocational student from application to a certificate anyone can
+verify.** Built for the vocational training programme of the Kalinga Institute of Social Sciences
+(KISS), Bhubaneswar.
 
-Takes every vocational student at KISS from enrollment to a verifiable certificate and Skill
-Passport. Software Engineering project by
-[@ShashankSinghhh](https://github.com/ShashankSinghhh) and
-[@ArnavAmbasta-05](https://github.com/ArnavAmbasta-05).
+**Live site:** <https://kiss-vtmp.vercel.app> · **Project report:**
+[docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) · **Presentation:**
+[docs/KISS_SkillBridge_Presentation.pptx](docs/KISS_SkillBridge_Presentation.pptx)
 
-- **Project report:** [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) (overview for the presentation)
-- **Business rules:** [docs/BRD.md](docs/BRD.md) (v1.2: BR-01…BR-28, BRQ-x.y, NFRs)
-- **Architecture:** [docs/TAD.md](docs/TAD.md) (v1.2) · **Database:** [docs/ER.md](docs/ER.md) ·
-  **Changes since release:** [docs/CHANGELOG.md](docs/CHANGELOG.md)
-- **Traceability:** [docs/TRACEABILITY.md](docs/TRACEABILITY.md) (every BRQ and BR → module,
-  endpoint, test)
-- **Testing:** [docs/TEST_PLAN.md](docs/TEST_PLAN.md) · **User guide:**
-  [docs/USER_GUIDE.md](docs/USER_GUIDE.md) · **Demo script:** [docs/DEMO.md](docs/DEMO.md)
-- **API contract:** [apps/api/openapi.yaml](apps/api/openapi.yaml) · Postman:
-  [docs/postman/](docs/postman/kiss-vtmp.postman_collection.json)
-- **Sprint log:** [docs/PROGRESS.md](docs/PROGRESS.md) · **Deployment:**
-  [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) (Vercel for web + API, Neon for PostgreSQL)
+![KISS SkillBridge front page](docs/screenshots/public-home.jpg)
 
-## Live demo
+## What it does
 
-**https://kiss-vtmp.vercel.app**
+Vocational training at KISS used to run on paper registers and spreadsheets, and an employer had
+no way to tell a real certificate from a fake one. SkillBridge replaces that with one rule-driven
+workflow:
 
-Sign in with the [seeded emails](#seed-accounts-local-development-only) (admin, trainers,
-students). The live demo password is shared privately by the team: ask
-[@ShashankSinghhh](https://github.com/ShashankSinghhh) or
-[@ArnavAmbasta-05](https://github.com/ArnavAmbasta-05). `Password@123` works only on a local
-setup.
+1. **Students** choose a training cycle, a programme and a course, and apply online.
+2. **Admins** approve applications (or let the rules approve them) and place students in batches.
+3. **Trainers** take attendance and enter marks; students see their progress as it happens.
+4. **The system** decides who has completed, using the same written rules for everyone.
+5. **Certificates** are issued as PDFs with a QR code that **anyone** can check in seconds.
 
-## Architecture
+It is open to every student: academic marks are never used to approve or rank anyone.
 
-```mermaid
-flowchart LR
-  subgraph Browser
-    SPA["React app<br/>(apps/web)"]
-    VERIFY["/verify page<br/>(no React, 11 KB)"]
-  end
-  subgraph Vercel["Vercel (region sin1)"]
-    CDN["Static files + CDN"]
-    API["Express API<br/>one serverless function<br/>/api/v1/*"]
-    CRON["Vercel Cron<br/>risk check, analytics"]
-  end
-  subgraph Data
-    PG[("Neon PostgreSQL 16<br/>+ pgvector")]
-    BLOB[("Vercel Blob<br/>private files")]
-  end
-  SPA -- "JSON + JWT" --> API
-  VERIFY -- "public, 30/min/IP" --> API
-  CDN --> SPA
-  CRON -- "Bearer CRON_SECRET" --> API
-  API -- "Prisma (pooled)" --> PG
-  API -- "signed URLs" --> BLOB
-  SPA -- "direct upload / signed download" --> BLOB
-```
+**Highlights:** five programmes and 30 courses · automatic approval and batch allocation · early
+warnings for students who are falling behind · a Skill Passport · public QR certificate checks ·
+English, Odia and Hindi · works on cheap phones over slow connections · every sensitive change in
+an audit log that cannot be edited.
 
-Every request goes through helmet → CORS allow-list → rate limiter → authentication → role
-check → ownership check → validation → controller → service. Business rules live in services
-(pure rule functions in each module's `rules.ts`); every status change and its audit row are
-written in one transaction. Details: [docs/TAD.md](docs/TAD.md).
+| Choosing a programme                                                 | Admin: programmes and courses                                       |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| ![Student chooses a programme](docs/screenshots/student-courses.jpg) | ![Admin courses and programmes](docs/screenshots/admin-courses.jpg) |
 
-The **AI training assistant** (F17) is built but switched off on the live site (no paid API
-keys). To try it locally for free, set `AI_ENABLED=true`, `ASSISTANT_PROVIDER=mock` and
-`AI_MONTHLY_CAP=1` in `.env`: the mock quotes the best-matching passage of the approved notes
-instead of calling a model.
+## How it is built
 
-## Stack
+![Architecture](docs/images/architecture.png)
 
-| Part                       | Technology                                                          |
-| -------------------------- | ------------------------------------------------------------------- |
-| Web (`apps/web`)           | React 18, Vite, React Router, Tailwind CSS, TanStack Query, i18next |
-| API (`apps/api`)           | Node.js 20, Express, Zod, Prisma, pino, helmet                      |
-| Database                   | PostgreSQL 16 (pgvector image) via Docker                           |
-| Shared (`packages/shared`) | Zod schemas, status enums and types used by both apps               |
-| Tests                      | Jest + Supertest (API), Playwright + axe-core (browser)             |
+| Part     | Technology                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Web app  | React 18, Vite, Tailwind CSS, TanStack Query, i18next                                                               |
+| API      | Node.js 20, Express, Zod, Prisma                                                                                    |
+| Database | PostgreSQL 16                                                                                                       |
+| Hosting  | Vercel and Neon, on free plans                                                                                      |
+| Testing  | Jest and Supertest, Playwright and axe-core: 491 API tests and 79 browser tests, every requirement traced to a test |
 
-## Setup
+## Documentation
 
-You need **Node.js 20+**, **pnpm 9** (`npm i -g pnpm@9`) and **Docker Desktop** (running).
+| Document                                                              | What it covers                                          |
+| --------------------------------------------------------------------- | ------------------------------------------------------- |
+| [Project report](docs/PROJECT_REPORT.md)                              | The whole project in one place, with UML diagrams       |
+| [User guide](docs/USER_GUIDE.md)                                      | How students, trainers and admins use the portal        |
+| [Requirements (BRD)](docs/BRD.md)                                     | Business requirements and the 28 business rules         |
+| [Architecture (TAD)](docs/TAD.md)                                     | Design, modules, security and deployment                |
+| [Database (ER)](docs/ER.md)                                           | Tables and relationships                                |
+| [Test plan](docs/TEST_PLAN.md) · [Traceability](docs/TRACEABILITY.md) | How it is tested; every requirement mapped to its tests |
+| [API contract](apps/api/openapi.yaml)                                 | Every endpoint (OpenAPI)                                |
+
+## Team
+
+|                                                                             |                                  |
+| --------------------------------------------------------------------------- | -------------------------------- |
+| **Shashank Singh** ([@ShashankSinghhh](https://github.com/ShashankSinghhh)) | Design and build                 |
+| **Arnav Ambasta** ([@ArnavAmbasta-05](https://github.com/ArnavAmbasta-05))  | Testing, quality and maintenance |
+
+## Run it locally
+
+You need Node.js 20+, pnpm 9 and Docker Desktop.
 
 ```bash
 pnpm install
-cp .env.example .env        # dev defaults work as-is
-pnpm db:up                  # start PostgreSQL in Docker
-pnpm db:migrate             # apply migrations
-pnpm db:seed                # load demo data
-pnpm dev                    # API on :4000, web on :5173
+cp .env.example .env
+pnpm db:up        # PostgreSQL in Docker
+pnpm db:migrate   # create the tables
+pnpm db:seed      # programmes, courses, one cycle, batches, trainers, 100 students
+pnpm dev          # API on :4000, web app on :5173
 ```
 
-Open http://localhost:5173 and sign in with a seed account below. The admin dashboard shows
-whether the API and database are reachable, and
-`GET http://localhost:4000/api/v1/health` should return `{"status":"ok","db":"ok",…}`.
-
-### Seed accounts (local development only)
-
-On a local setup every seeded account uses the password `Password@123`. The live demo uses the
-same emails with a different, private password.
-
-| Role    | Email                                                                     |
-| ------- | ------------------------------------------------------------------------- |
-| Admin   | `admin@kiss-vtmp.test`                                                    |
-| Trainer | `trainer1@kiss-vtmp.test` … `trainer5@kiss-vtmp.test` (one per programme) |
-| Student | `student001@kiss-vtmp.test` … `student100@kiss-vtmp.test`                 |
-
-The seed is a clean starting point: one training cycle open for applications; five programmes
-(Computer & Digital Skills, Art, Craft & Handicrafts, Manufacturing & Production, Agriculture &
-Livelihood, Professional & Life Skills) with 30 courses and open enrollment windows; one
-planned batch per course with its programme's trainer; and every Setting at its default, except
-that a student applies for one course. There are no applications, marks or certificates. It is
-idempotent: run it again any time; `pnpm --filter @vtmp/api db:reset` starts over. Database
-tables are described in [docs/ER.md](docs/ER.md). `--reset-passwords` (with `SEED_PASSWORD`)
-sets a new password on every seeded account.
-
-Sign in at http://localhost:5173 with any seed account: each role lands on its own dashboard
-(`/student`, `/trainer`, `/admin`).
-
-## Scripts
-
-| Command                                        | What it does                                         |
-| ---------------------------------------------- | ---------------------------------------------------- |
-| `pnpm dev`                                     | Run API and web together with hot reload             |
-| `pnpm db:up` / `pnpm db:down`                  | Start / stop the PostgreSQL container                |
-| `pnpm db:migrate`                              | Create and apply Prisma migrations (dev)             |
-| `pnpm db:seed`                                 | Load seed data                                       |
-| `pnpm test`                                    | All API tests (unit + integration; needs `db:up`)    |
-| `pnpm test:unit`                               | API unit tests only (no database needed)             |
-| `pnpm test:e2e`                                | Playwright browser tests (starts the web dev server) |
-| `pnpm lint` / `pnpm typecheck` / `pnpm format` | Code quality                                         |
-| `pnpm build`                                   | Production builds of API and web                     |
-| `pnpm --filter @vtmp/web i18n:sync`            | Copy new English UI keys into the Odia/Hindi files   |
-| `pnpm --filter @vtmp/web i18n:check`           | Fail if any Odia/Hindi string is missing or empty    |
-| `pnpm --filter @vtmp/web bundle:check`         | Fail if a core student page is over 500 KB (gzip)    |
-| `pnpm docs:trace` / `pnpm docs:check`          | Rebuild / verify docs/TRACEABILITY.md                |
-| `node scripts/postman.mjs`                     | Rebuild the Postman collection from openapi.yaml     |
-
-Run Playwright once with `pnpm --filter @vtmp/web exec playwright install chromium` before the
-first `pnpm test:e2e`.
-
-GitHub Actions also has three workflows you start by hand: **Performance** (`perf.yml`: k6 with
-100 users and Lighthouse on a production build), and **Gate 1** / **Gate 2 on the live site**
-(the release acceptance tests against the deployed URL).
-
-## Repository layout
-
-```
-apps/api/src/core/      config, errors, http, middleware, db, audit, settings (shared kernel)
-apps/api/src/modules/   one folder per module: routes, controller, service, schema, __tests__
-apps/web/src/           components/ui (design system), features/<module>, locales/{en,or,hi}
-packages/shared/src/    enums, schemas, types shared by API and web
-prisma/                 schema.prisma, migrations, seed.ts
-docs/                   BRD, TAD, ER, changelog, traceability, test plan, user guide, demo, progress log
-perf/                   k6 load test and Lighthouse budget check
-scripts/                Vercel build, traceability and Postman generators
-```
-
-## Working together
-
-- `main` is the deployed branch; work on a feature branch and open a pull request.
-- CI (GitHub Actions) runs lint, typecheck, unit tests, integration tests against PostgreSQL,
-  the production build and the browser smoke tests on every push and pull request.
-- UI text never goes in components: add keys to `apps/web/src/locales/en/*.json` and use `t()`.
-- Never commit `.env` or real secrets.
+Open <http://localhost:5173> and sign in as `admin@kiss-vtmp.test`, `trainer1@kiss-vtmp.test`
+or `student001@kiss-vtmp.test` with the local password `Password@123` (local setup only).
+Run the tests with `pnpm test` and `pnpm test:e2e`.

@@ -50,12 +50,12 @@ wins for business rules.
 > - The free-tier risks in §15.1 change accordingly.
 >
 > Rows changed by this amendment are marked "(Amendment 1)". Setup and
-> the reasons for each choice are in docs/DEPLOYMENT.md and
-> docs/PROGRESS.md (Sprint 2).
+> the reasons for each choice are in docs/internal/DEPLOYMENT.md and
+> docs/internal/PROGRESS.md (Sprint 2).
 
 > **Amendment 2 (2026-11-01): changes after release.** After Release 3
 > the team used the portal and reviewed it twice (a site test run and a
-> logic review; see PROGRESS.md). The architecture is unchanged: the same
+> logic review; see internal/PROGRESS.md). The architecture is unchanged: the same
 > modules, layers and rules apply. What changed:
 >
 > - **Business rules:** BR-06, BR-09, BR-19 and BR-20 were amended and

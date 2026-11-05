@@ -2,10 +2,10 @@
 
 The demo runs on two free tiers. Neither asks for a card.
 
-| Part | Host | Config in repo |
-| --- | --- | --- |
+| Part                                  | Host                            | Config in repo                                           |
+| ------------------------------------- | ------------------------------- | -------------------------------------------------------- |
 | Web (React SPA) **and** API (Express) | **Vercel** (Hobby), one project | `vercel.json`, `api/index.js`, `scripts/vercel-build.sh` |
-| Database (PostgreSQL 16) | **Neon** (Free), Singapore | `prisma/migrations` |
+| Database (PostgreSQL 16)              | **Neon** (Free), Singapore      | `prisma/migrations`                                      |
 
 ```
 browser ──▶ https://kiss-vtmp.vercel.app
@@ -16,21 +16,21 @@ browser ──▶ https://kiss-vtmp.vercel.app
 ```
 
 The TAD (§4, §11) names Render/Railway for the API as examples. We moved the API onto Vercel
-because Render requires a card (docs/PROGRESS.md, Sprint 2). The Express app is unchanged:
+because Render requires a card (PROGRESS.md, Sprint 2). The Express app is unchanged:
 locally and in CI it still runs as a normal server (`apps/api/src/server.ts`).
 
 ## What serverless changes
 
-| Concern | How it is handled |
-| --- | --- |
-| Refresh cookie (`SameSite=Strict`) | The site and API share one origin, so the cookie is always same-site and no CORS is involved |
-| Rate limits | Security limiters (failed logins now; the public router in Sprint 9) store counts in the `rate_limits` table (`RATE_LIMIT_STORE=postgres`, the production default), so every function instance shares one limit. The generous global flood limiter stays in memory |
-| Database connections | Neon's pooled URL with `connection_limit=1` per function instance |
-| Migrations | Run in the production build (`scripts/vercel-build.sh`) against the direct URL, before the new code goes live |
-| Scheduled jobs (Sprint 10) | Vercel Cron (`crons` in `vercel.json`) calls `GET /api/v1/internal/jobs/risk-evaluation` once a day at 20:30 UTC (02:00 IST; Hobby may fire up to ~1 h late) with `Authorization: Bearer $CRON_SECRET`. A lease row in `job_locks` stops two runs overlapping (session advisory locks don't survive the pooled URL). A run stops after 25 s and reports `partial`; batches go in random order, so later runs reach the rest. node-cron runs the same job at 02:00 only locally |
-| Files (Sprint 6+) | No persistent disk, so certificate PDFs (and evidence in Sprint 11) go to a **private Vercel Blob store** (`STORAGE_DRIVER=vercel-blob`). The database keeps only the object key; only the API can read the files, using `BLOB_READ_WRITE_TOKEN`. Fonts and PDFKit's data files ship with the function (`includeFiles` in `vercel.json`) |
-| Request time | Function limit set to 30 s (`vercel.json`). Bulk operations are designed to finish well inside it |
-| Browser security headers | The API sets its own (helmet). The pages get theirs from `vercel.json` `headers`: CSP (scripts from the site only; `connect-src` allows `vercel.com` and `*.blob.vercel-storage.com` for evidence uploads), `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff`, referrer and permissions policies, HSTS. Add any new outside host to the CSP, or the browser blocks it |
+| Concern                            | How it is handled                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Refresh cookie (`SameSite=Strict`) | The site and API share one origin, so the cookie is always same-site and no CORS is involved                                                                                                                                                                                                                                                                                                                                                                                   |
+| Rate limits                        | Security limiters (failed logins now; the public router in Sprint 9) store counts in the `rate_limits` table (`RATE_LIMIT_STORE=postgres`, the production default), so every function instance shares one limit. The generous global flood limiter stays in memory                                                                                                                                                                                                             |
+| Database connections               | Neon's pooled URL with `connection_limit=1` per function instance                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Migrations                         | Run in the production build (`scripts/vercel-build.sh`) against the direct URL, before the new code goes live                                                                                                                                                                                                                                                                                                                                                                  |
+| Scheduled jobs (Sprint 10)         | Vercel Cron (`crons` in `vercel.json`) calls `GET /api/v1/internal/jobs/risk-evaluation` once a day at 20:30 UTC (02:00 IST; Hobby may fire up to ~1 h late) with `Authorization: Bearer $CRON_SECRET`. A lease row in `job_locks` stops two runs overlapping (session advisory locks don't survive the pooled URL). A run stops after 25 s and reports `partial`; batches go in random order, so later runs reach the rest. node-cron runs the same job at 02:00 only locally |
+| Files (Sprint 6+)                  | No persistent disk, so certificate PDFs (and evidence in Sprint 11) go to a **private Vercel Blob store** (`STORAGE_DRIVER=vercel-blob`). The database keeps only the object key; only the API can read the files, using `BLOB_READ_WRITE_TOKEN`. Fonts and PDFKit's data files ship with the function (`includeFiles` in `vercel.json`)                                                                                                                                       |
+| Request time                       | Function limit set to 30 s (`vercel.json`). Bulk operations are designed to finish well inside it                                                                                                                                                                                                                                                                                                                                                                              |
+| Browser security headers           | The API sets its own (helmet). The pages get theirs from `vercel.json` `headers`: CSP (scripts from the site only; `connect-src` allows `vercel.com` and `*.blob.vercel-storage.com` for evidence uploads), `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff`, referrer and permissions policies, HSTS. Add any new outside host to the CSP, or the browser blocks it                                                                                                     |
 
 ## One-time setup
 
@@ -63,21 +63,22 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
    Leave the build and output settings alone, because `vercel.json` sets them.
 4. **Environment Variables:** add these for the **Production** environment only:
 
-   | Key | Value |
-   | --- | --- |
-   | `NODE_ENV` | `production` |
-   | `DATABASE_URL` | Neon pooled URL (step 1) |
-   | `DIRECT_DATABASE_URL` | Neon direct URL (step 1) |
-   | `JWT_SECRET` | first generated secret |
-   | `REFRESH_SECRET` | second generated secret |
-   | `PUBLIC_BASE_URL` | `https://kiss-vtmp.vercel.app` |
-   | `CORS_ORIGINS` | `https://kiss-vtmp.vercel.app` |
-   | `TRUST_PROXY_HOPS` | `1` |
-   | `AI_ENABLED` | `false` |
-   | `STORAGE_DRIVER` | `vercel-blob` (needs the Blob store in step 3a) |
+   | Key                   | Value                                           |
+   | --------------------- | ----------------------------------------------- |
+   | `NODE_ENV`            | `production`                                    |
+   | `DATABASE_URL`        | Neon pooled URL (step 1)                        |
+   | `DIRECT_DATABASE_URL` | Neon direct URL (step 1)                        |
+   | `JWT_SECRET`          | first generated secret                          |
+   | `REFRESH_SECRET`      | second generated secret                         |
+   | `PUBLIC_BASE_URL`     | `https://kiss-vtmp.vercel.app`                  |
+   | `CORS_ORIGINS`        | `https://kiss-vtmp.vercel.app`                  |
+   | `TRUST_PROXY_HOPS`    | `1`                                             |
+   | `AI_ENABLED`          | `false`                                         |
+   | `STORAGE_DRIVER`      | `vercel-blob` (needs the Blob store in step 3a) |
 
    Leave Preview without database variables. Preview deployments then show the web app only and
    never touch (or migrate) the production database.
+
 5. **Settings → Functions → Function Region:** make sure it shows **Singapore (sin1)**.
    `vercel.json` requests it, and it keeps the API next to Neon.
 6. Click **Deploy**. The build applies migrations, then builds the API bundle and the web app.
@@ -95,7 +96,7 @@ new account is needed.
 3. Make sure `STORAGE_DRIVER=vercel-blob` is set (step 3), then **redeploy** so the function
    picks up both variables.
 4. Check: approve one eligible student in **Completion**, then download the certificate. If the
-   store is missing, the approval still succeeds but the student stays *Completed* and the
+   store is missing, the approval still succeeds but the student stays _Completed_ and the
    queue offers **Retry certificate** once storage works.
 
 Never paste `BLOB_READ_WRITE_TOKEN` anywhere: it can read every stored file.
@@ -107,7 +108,7 @@ Never paste `BLOB_READ_WRITE_TOKEN` anywhere: it can read every stored file.
    **Production**, then redeploy. Vercel sends it to the cron route as a Bearer token on its own.
 3. Check: **Settings → Cron Jobs** lists `/api/v1/internal/jobs/risk-evaluation`. Its log
    shows a 200 after the next run. To run it now without waiting, an admin can press **Run the
-   check now** on *At-risk students*.
+   check now** on _At-risk students_.
 
 Without `CRON_SECRET` the route refuses every call (401), so the check only runs when someone
 saves attendance, marks or ratings, or presses the button. Never paste the secret anywhere.
@@ -115,7 +116,7 @@ saves attendance, marks or ratings, or presses the button. Never paste the secre
 The **daily automation** (closing finished batches, waitlist, reminders, notices) is a second
 cron, `/api/v1/internal/jobs/daily-automation` at 21:30 UTC (03:00 IST), with the same
 `CRON_SECRET`; **Settings → Cron Jobs** lists both. Without the secret, admins can still press
-**Run now** on the *Automation* page. Vercel's free plan runs crons at most once a day, which is
+**Run now** on the _Automation_ page. Vercel's free plan runs crons at most once a day, which is
 all these jobs need.
 
 ### 4. Seed the demo data (once)
@@ -197,15 +198,15 @@ Pull requests get Vercel preview URLs for the web app (no API, see step 3.4).
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
-| --- | --- |
-| Build fails: `DIRECT_DATABASE_URL must be set` | Add it to the **Production** environment variables |
-| Build fails at `migrate deploy` | Direct URL is wrong or is the pooled one |
-| `/api/v1/health` returns 503 | `DATABASE_URL` is wrong, or Neon is waking up (first request after idle). Retry |
-| `401 INVALID_TOKEN` for everyone after a change | `JWT_SECRET` changed. Users just sign in again |
-| Everyone gets `429 RATE_LIMITED` on login | `TRUST_PROXY_HOPS` must be `1` on Vercel, otherwise every visitor looks like one IP |
-| Signed out on every reload | Open the site via its Vercel URL. The refresh cookie only works on that origin |
-| Function error: Prisma engine not found | Redeploy without cache. `vercel.json` `includeFiles` must still match the Prisma client path |
+| Symptom                                         | Cause / fix                                                                                  |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Build fails: `DIRECT_DATABASE_URL must be set`  | Add it to the **Production** environment variables                                           |
+| Build fails at `migrate deploy`                 | Direct URL is wrong or is the pooled one                                                     |
+| `/api/v1/health` returns 503                    | `DATABASE_URL` is wrong, or Neon is waking up (first request after idle). Retry              |
+| `401 INVALID_TOKEN` for everyone after a change | `JWT_SECRET` changed. Users just sign in again                                               |
+| Everyone gets `429 RATE_LIMITED` on login       | `TRUST_PROXY_HOPS` must be `1` on Vercel, otherwise every visitor looks like one IP          |
+| Signed out on every reload                      | Open the site via its Vercel URL. The refresh cookie only works on that origin               |
+| Function error: Prisma engine not found         | Redeploy without cache. `vercel.json` `includeFiles` must still match the Prisma client path |
 
 ## Security checklist
 

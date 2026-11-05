@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'locales');
 const source = 'en';
-// Language folders only (src/locales also holds REVIEW.md).
+// Language folders only.
 const targets = readdirSync(root).filter(
   (d) => d !== source && statSync(join(root, d)).isDirectory(),
 );

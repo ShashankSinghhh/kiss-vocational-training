@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Screenshots for docs/USER_GUIDE.md and docs/DEMO.md, taken on a freshly seeded database so
+ * Screenshots for docs/USER_GUIDE.md and docs/internal/DEMO.md, taken on a freshly seeded database so
  * they show demo data only (never test leftovers). Not part of CI.
  *
  *   createdb vtmp_docs, then migrate and seed it with DATABASE_URL pointing at it

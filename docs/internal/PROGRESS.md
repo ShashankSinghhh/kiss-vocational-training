@@ -18,6 +18,7 @@ Read this at the start of every session and update it at the end of every sprint
 ## Release note (final, 2026-10-26)
 
 ### Shipped
+
 - **Release 1 (core):** F1 sign-in and roles, F2 courses and cycles, F3 enrollment, F4 batches
   and allocation, F5 attendance, F6 assessments, F7 completion and certificates (PDF with ID
   and QR), F8 reports, F9 dashboards. Gate 1 passed on the live site.
@@ -32,12 +33,14 @@ Read this at the start of every session and update it at the end of every sprint
   requirements and rules traced to a test or CI check.
 
 ### Built but switched off
+
 - **F17 AI training assistant.** Complete and tested with mock providers (materials upload and
   approval, retrieval, cited answers, practice questions, limits, usage page). Off on the live
   site because it needs paid API keys (Claude and Voyage) and the project has no budget. It can
   be tried locally for free with the mock provider (README).
 
 ### Deferred / known gaps
+
 - Native-speaker review of the Odia and Hindi text (machine-drafted, complete).
 - Cold start on the free hosting: about 2.7 s for the first request after idle (target 2 s);
   fixing it needs a paid plan.
@@ -49,7 +52,7 @@ Read this at the start of every session and update it at the end of every sprint
 
 - **Why:** with about 2,000 applications a cycle, approving each by hand is pointless work. The
   BRD (BRQ-3.3) wants the admin in control, not reading every form.
-- **What:** an *Automatic approval* card on the admin Enrollments page:
+- **What:** an _Automatic approval_ card on the admin Enrollments page:
   - **Switch** (`enrollment.autoApprove`, off by default).
   - **Minimum CGPA** (`enrollment.autoApproveMinCgpa`, 0 = none).
   - **"Courses with prerequisites need my review"** (`enrollment.autoApproveManualIfPrerequisites`,
@@ -62,7 +65,7 @@ Read this at the start of every session and update it at the end of every sprint
     student is notified.
   - Anything else stays Pending. The admin list shows why (`needsReview`: "CGPA 5.20 is below
     6.00", "Electrician has prerequisites").
-  - *Approve eligible pending applications* applies the saved rules to what is already pending
+  - _Approve eligible pending applications_ applies the saved rules to what is already pending
     in a cycle. It is one set-based `UPDATE … RETURNING` with bulk audit rows and notifications,
     so thousands of rows fit in one serverless request. A concurrent manual decision wins.
 - **API:** `GET/PUT /admin/enrollments/auto-approval`, `POST /admin/enrollments/auto-approve`
@@ -97,11 +100,12 @@ Read this at the start of every session and update it at the end of every sprint
 ## After Sprint 13 — Admin clean-up, applied courses, phones and translations (2026-10-27)
 
 ### Built
+
 - **Latest applications first:** the admin review queue (`GET /admin/enrollments`) is ordered
   newest first (ties by id), and the page intro says so in all three languages.
 - **Applied courses in Courses:** the student catalogue marks each course in the student's active
-  application for that cycle with *Applied · choice N* and the application's status, and offers
-  *View my application* (or *Change my choices* while it can still be edited) instead of *Apply*.
+  application for that cycle with _Applied · choice N_ and the application's status, and offers
+  _View my application_ (or _Change my choices_ while it can still be edited) instead of _Apply_.
 - **Admin clean-up of courses and users** (BRQ-2.1 for courses):
   - lists show active records only by default, with a status filter and (courses) search;
   - select rows, or all shown, and deactivate or reactivate them in one go:
@@ -111,35 +115,38 @@ Read this at the start of every session and update it at the end of every sprint
   - `DELETE /admin/courses/:id` and `DELETE /admin/users/:id` remove only records with no
     history (created by mistake). Anything referenced is refused with 409 `COURSE_IN_USE` /
     `USER_IN_USE` and can only be deactivated. Seven foreign keys to users are `ON DELETE SET
-    NULL` in the database (enrollment decider, session trainer, setting editor, rating
+NULL` in the database (enrollment decider, session trainer, setting editor, rating
     verifier/reviser, resource and material approver), so the service checks those explicitly
     before deleting; every other reference blocks the delete itself. Audited `COURSE_DELETED` /
     `USER_DELETED` in the same transaction.
 - **Phones and per-device settings:** the shared `Table` shows each row as a card below the `sm`
   breakpoint (explicit table roles keep screen readers and tests working). List filters (users
-  role/status, courses status, enrollments status, catalogue *open only*) are remembered per
+  role/status, courses status, enrollments status, catalogue _open only_) are remembered per
   device in `localStorage` via `usePersistentState` (no personal data; falls back to defaults
   when storage is blocked).
 - **Translations:** one term per idea across files (Hindi पाठ्यक्रम instead of कोर्स in the
   assistant and errors, Odia ବ୍ୟବହାରକାରୀ for "user"); clearer Hindi confirmation messages;
-  a *Standard terms* glossary in `apps/web/src/locales/REVIEW.md`.
+  a _Standard terms_ glossary in `apps/web/src/locales/REVIEW.md`.
 - Tests: +10 API tests (newest-first order, bulk status, safe delete including the SET NULL
   case), +3 Playwright tests (applied badge, course clean-up, deleting a mistaken account);
   the access-matrix snapshot gains the 4 new admin-only routes (163 routes with the automatic-approval ones).
 
 ### Deviations from BRD/TAD (and why)
+
 - The review queue was oldest first ("in the order they arrived"); the team asked for the
   latest applications first. Allocation order is unchanged (it never used the queue order).
 
 ### Known gaps / follow-ups
+
 - Odia ଅଧିବେଶନ for a training session is flagged for the native-speaker review (ସେସନ୍ may read
   more naturally).
 - Hand-built tables (competency matrix, audit log, sessions grid) still scroll sideways on
   phones; they are grids, not lists.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (no new data needed) ·
-  [x] strings externalized (en, hi, or)
+      [x] strings externalized (en, hi, or)
 
 ---
 
@@ -149,6 +156,7 @@ A full test run of every screen and process found four high-severity problems (r
 "KISS VTMP — Site test run and fine-tuning report"). All four are fixed here.
 
 ### Built
+
 - **A1 Password reset:** `POST /admin/users/:id/password` (Admin). Sets a new password, clears
   any login lock, revokes every session and audits `USER_PASSWORD_RESET` without the password.
   An admin can't reset their own (409 `CANNOT_RESET_OWN_PASSWORD`; they use their profile).
@@ -169,19 +177,22 @@ A full test run of every screen and process found four high-severity problems (r
   keys); e2e: password reset, reissue after revoke. Access-matrix snapshot +1 route (164).
 
 ### Deviations from BRD/TAD (and why)
+
 - **New business rule beyond BR-01:** BR-01 allows one application per cycle; it said nothing
   about cycles that overlap. The test run showed a student placed in two trainings 3 weeks
   apart in time, so overlapping commitments are now refused. To be confirmed with the BRD owner.
 - BR-19 described reissue for valid certificates only; it now also replaces revoked ones.
 
 ### Known gaps / follow-ups
+
 - Enrollments approved into overlapping cycles before this change are not undone: check
   existing data once (the seed's Pilot and 2026-27 cycles overlap by 3 weeks).
 - The other 18 medium/low items of the report remain open.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (no new data needed) ·
-  [x] strings externalized (en, hi, or)
+      [x] strings externalized (en, hi, or)
 
 ---
 
@@ -191,11 +202,12 @@ The eight medium-severity items of the test-run report, all fixed. One migration
 (`20261028100000_password_change_and_prerequisite_review`) adds two columns with defaults.
 
 ### Built
+
 - **A3 Choose your own password:** `users.must_change_password`. Set when an admin creates an
   account with `mustChangePassword` (the Users form ticks it by default) or resets a password
   (default on). While set, `authenticate` answers 403 `PASSWORD_CHANGE_REQUIRED` on everything
   except `GET /auth/me`, `POST /users/me/password`, `PATCH /users/me` and
-  `GET /notifications/me`; the web app sends the user to *Change password*. Changing it clears
+  `GET /notifications/me`; the web app sends the user to _Change password_. Changing it clears
   the flag. `Me` carries `mustChangePassword`.
 - **A2 Unlock:** `POST /admin/users/:id/unlock` clears a login lock (audited `USER_UNLOCKED`);
   **Unlock** shows on locked rows.
@@ -219,18 +231,21 @@ The eight medium-severity items of the test-run report, all fixed. One migration
   seeded trainer at the same times, which T3 now rightly treats as a clash.
 
 ### Deviations from BRD/TAD (and why)
+
 - BR-20 / BRQ-14.2 treated only trainers named on both sessions as a hard clash. A batch's only
   trainer is now treated as named, because otherwise the usual case (sessions that name nobody)
   was never checked.
 
 ### Known gaps / follow-ups
+
 - The seed keeps every course's prerequisites needing review; untick them for the demo if
   automatic approval should approve applications for "Class 8 pass" courses.
 - The low-severity items of the report remain open.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (defaults cover new
-  columns) · [x] strings externalized (en, hi, or)
+      columns) · [x] strings externalized (en, hi, or)
 
 ---
 
@@ -240,6 +255,7 @@ Eight of the ten low-severity items fixed; one was already handled and one confl
 project rule (both below).
 
 ### Built
+
 - **A4 Passwords:** a new password needs at least one letter and one digit as well as 8
   characters (shared `PasswordSchema`; Unicode letters count, so Odia/Hindi passwords work).
   Sign-in still accepts any password.
@@ -256,10 +272,11 @@ project rule (both below).
 - **D5** `useBatch` sends no request until a batch is chosen (no more 404 on Completion).
 - **D6** Dashboard tiles say "Student accounts" / "Trainer accounts" (they count accounts).
 - **D7** Outcome analytics says how many certificates were issued after its figures were built
-  (`certificatesSinceRefresh`), next to *Refresh now*.
+  (`certificatesSinceRefresh`), next to _Refresh now_.
 - Tests: +4 API tests; the lock-out test now checks the locked and unknown answers are identical.
 
 ### Not changed (and why)
+
 - **S5** was already handled: the Assistant page says "Your course has no approved materials
   yet. Ask your trainer." The test run only looked at the API.
 - **P2** (a higher limit for certificate checks) would break CLAUDE.md rule 7 and NFR-09 (30
@@ -267,8 +284,9 @@ project rule (both below).
   `public.rateLimitPerMin`; raise it deliberately if a placement drive needs more.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (no new data) ·
-  [x] strings externalized (en, hi, or)
+      [x] strings externalized (en, hi, or)
 
 ---
 
@@ -277,6 +295,7 @@ project rule (both below).
 The four low findings of the security check (see the medium-fixes entry below).
 
 ### Built
+
 - **Search wildcards:** Prisma's `contains` doesn't escape `%` and `_`, so searching for `%`
   listed every user. A new `likeLiteral()` (`core/db/search.ts`) escapes them, and the user,
   application and certificate searches use it. Tests: unit test, and an integration test where
@@ -300,16 +319,19 @@ The four low findings of the security check (see the medium-fixes entry below).
   made the rate limiter log a warning.
 
 ### Deviations from BRD/TAD (and why)
+
 - CLAUDE.md rule 6 lists 400/401/403/404/409/422; 413 and 415 are added for request bodies the
   server can't read, because they are the standard answers and were 500 before.
 
 ### Known gaps / follow-ups
+
 - To use the separate admin password on the live site, the owner runs `--reset-passwords` with
   `SEED_ADMIN_PASSWORD` and adds the GitHub secret `E2E_ADMIN_PASSWORD` (DEPLOYMENT.md step 4, 6).
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests (488) · [x] openapi.yaml · [x] seed · [x] strings
-  externalized (no UI change)
+      externalized (no UI change)
 
 ---
 
@@ -348,6 +370,7 @@ can't be reached from the work environment): 51 attacks, a code review and a dep
 audit. Three medium issues are fixed here.
 
 ### Built
+
 - **Lockout race (TC-02):** failed sign-ins were counted by reading the count and writing it back,
   so 20 wrong passwords sent at once counted as one and the account never locked. The count now
   goes up in one atomic database step, and only the attempt that reaches the limit locks and
@@ -364,9 +387,11 @@ audit. Three medium issues are fixed here.
   denial-of-service flaw with compressed request bodies.
 
 ### Deviations from BRD/TAD (and why)
+
 - None: TAD §9 already requires the lockout and the security headers.
 
 ### Known gaps / follow-ups
+
 - Low findings left as they are: anyone can lock the single admin account with 5 wrong guesses
   (add a second admin); an over-1 MB request answers 500 instead of 413; `%` and `_` act as
   wildcards in the admin user search; all seeded accounts share one demo password.
@@ -376,14 +401,16 @@ audit. Three medium issues are fixed here.
 - The headers can only be confirmed on the live site after deploy (`curl -I` the home page).
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests (481 with the seed clean-up) · [x] openapi.yaml (no endpoint) · [x] seed (no
-  change) · [x] strings externalized (no UI change)
+      change) · [x] strings externalized (no UI change)
 
 ---
 
 ## After Sprint 13 — Removing the old seeded students 041–060 (2026-11-02)
 
 ### Built
+
 - `pnpm db:seed --remove-old-students` (`apps/api/src/seed/removeOldStudents.ts`) clears the
   seeded students 041–060 that a database seeded before 2026-10-30 still holds (the follow-up
   left by the unique-names change).
@@ -393,29 +420,33 @@ audit. Three medium issues are fixed here.
     insert-only audit log) keeps the records and is deactivated instead, like the admin's safe
     delete (BRQ-2.5).
   - Each change is audited (`USER_DELETED` or `USER_DEACTIVATED`, `by: seed
-    --remove-old-students`). Running it again changes nothing. Accounts with real emails and
+--remove-old-students`). Running it again changes nothing. Accounts with real emails and
     students 001–040 are never touched.
 - DEPLOYMENT.md step 4 gives the command for the live database.
 - Tests: +2 integration tests (`seed/__tests__/removeOldStudents.int.test.ts`).
 
 ### Deviations from BRD/TAD (and why)
+
 - None: a one-off maintenance option of the seed, no API or rule change.
 
 ### Known gaps / follow-ups
+
 - The live (Neon) database still has to be cleaned. This session can't reach it and never
   handles its URL, so the project owner runs the command from their machine. The local database
   already had only 40 students.
 - The screenshots in `docs/screenshots` still show the old names.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml (no endpoint) · [x] seed ·
-  [x] strings externalized (no UI change)
+      [x] strings externalized (no UI change)
 
 ---
 
 ## After Sprint 13 — Programmes and a clean starting database (2026-11-03)
 
 ### Built
+
 - **Programmes** (groups of related courses): new `programmes` table and optional
   `courses.programme_id` (migration `20261103100000_programmes`, ON DELETE RESTRICT).
   - API: `GET /programmes` (signed in), `GET/POST /admin/programmes`,
@@ -432,7 +463,7 @@ audit. Three medium issues are fixed here.
 - **Clean seed** (`apps/api/src/seed`): the admin; five trainers (`trainer1`–`trainer5`, one per
   programme); 100 students (`student001`–`student100`); one cycle (`<year>-<yy> Training Cycle`,
   applications open for 30 days, classes from day 35 for 26 weeks); the five programmes and
-  their 30 courses in the order KISS listed them; one planned *Batch A* per course with its
+  their 30 courses in the order KISS listed them; one planned _Batch A_ per course with its
   programme's trainer; `enrollment.maxPreferences` = 1. No applications, training, marks,
   certificates, competencies or opportunities.
   - Student names pair a first name and a surname from **different** people in the KISS slot
@@ -450,6 +481,7 @@ audit. Three medium issues are fixed here.
   `phone-student-courses`).
 
 ### Deviations
+
 - Removed `--large` (500 students) and `--remove-old-students`, and the pilot-batch, completion,
   competency and opportunity demo data, at the team's request for a clean database. The BO-3
   allocation timing is still covered by the allocation integration tests, which create their own
@@ -457,6 +489,7 @@ audit. Three medium issues are fixed here.
 - `MAX_PREFERENCES` (3) stays the hard ceiling; KISS runs with the setting at 1.
 
 ### Known gaps / follow-ups
+
 - The live database still has the old data until the team runs the reset in DEPLOYMENT.md §4.
   Old Blob files (certificate PDFs, evidence) stay until deleted in the Vercel dashboard.
 - Screenshots of training, marks, certificates and the passport still show the earlier pilot
@@ -499,6 +532,7 @@ audit. Three medium issues are fixed here.
 ## After Sprint 13 — Automation of the Round 2 manual steps (2026-11-01)
 
 ### Built
+
 - **New `automation` module** (innovation tier, so it may call core services; no core module
   imports it). An **Automation** page for admins (`/admin/automation`) holds every switch and
   limit below, shows the last nightly run step by step, and has **Run now**.
@@ -523,7 +557,7 @@ audit. Three medium issues are fixed here.
   students and trainers hear that a future session was cancelled; a student hears 7 days before
   a passport link expires; students whose verified competencies match at least 75 % of a new
   opportunity hear about it.
-- **A5 CSV import (BRQ-1.5):** *Import students* on the Users page. Up to 500 rows, checked
+- **A5 CSV import (BRQ-1.5):** _Import students_ on the Users page. Up to 500 rows, checked
   first (row-by-row errors: invalid, duplicate in file, email or roll number taken), then all or
   nothing. Imported accounts must change the starting password at the first sign-in; each is
   audited (`by: CSV_IMPORT`).
@@ -546,12 +580,14 @@ audit. Three medium issues are fixed here.
   75 browser tests, traceability 120 of 120.
 
 ### Deviations from BRD/TAD (and why)
+
 - None in rules: BRD v1.2 and TAD Amendment 3 were written with the code. Waitlist promotion is
   off by default because it changes who gets a seat without a person deciding.
 - No database migration: everything uses the existing Settings, job lock, notification and
   audit tables.
 
 ### Known gaps / follow-ups
+
 - Notices are in-app only (no email or SMS: those cost money).
 - Two automation tests (applications open, placement follow-up) have a 120 s limit: the shared
   local test database holds tens of thousands of students and placements, and a run covers them.
@@ -560,14 +596,16 @@ audit. Three medium issues are fixed here.
 - The v1.2 rules still need the project owner's sign-off.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (settings defaults, no new
-  data needed) · [x] strings externalized (en, hi, or)
+      data needed) · [x] strings externalized (en, hi, or)
 
 ---
 
 ## After Sprint 13 — Documentation brought to v1.1 (2026-11-01)
 
 ### Built
+
 - **BRD v1.1** (`docs/BRD.md`, plus `docs/KISS_VTMP_BRD_v1.1.docx` generated with pandoc, styled
   from v1.0):
   - Section 5.4 lists the scope changes after release.
@@ -587,22 +625,26 @@ audit. Three medium issues are fixed here.
   comments changed, no behaviour.
 
 ### Deviations from BRD/TAD (and why)
+
 - None: this entry brings the BRD and TAD up to date with the code. The v1.0 Word documents are
   kept as the reviewed baseline next to v1.1.
 
 ### Known gaps / follow-ups
+
 - The v1.1 rule changes still need the project owner's sign-off (BRD Section 16).
 - The v2.1 project documentation (Word) is not revised; the BRD and TAD win where they differ.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml (IDs only) · [x] seed (no change) ·
-  [x] strings externalized (no UI change)
+      [x] strings externalized (no UI change)
 
 ---
 
 ## After Sprint 13 — Unique, realistic student names and a smaller seed (2026-10-30)
 
 ### Built
+
 - The seed's student names were drawn at random from 24 first names and 14 surnames, so the 60
   students held only 55 different names ("Chandan Hembram" three times) and some first names
   five times. Four "surnames" were community names (Kandha, Saora, Juang, Gond), which people
@@ -619,18 +661,21 @@ audit. Three medium issues are fixed here.
   name shape, CGPAs as before). README and DEMO.md updated (student 021 is now Sanjukta Kujur).
 
 ### Known gaps / follow-ups
+
 - Databases seeded before this keep students 041–060 until removed by hand. The screenshots in
   `docs/screenshots` still show the old names.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml (no API change) · [x] seed ·
-  [x] strings externalized (no UI change)
+      [x] strings externalized (no UI change)
 
 ---
 
 ## After Sprint 13 — Round 2 low-severity fix: cycles say whether they take applications (2026-10-30)
 
 ### Built
+
 - **L7:** `GET /cycles` now gives each cycle `applications` (`OPEN`, `UPCOMING` or `CLOSED`,
   from its courses' windows; pure rule `cycleApplications`) and lists the open ones first, then
   upcoming, then closed. The student's cycle picker shows it beside each name ("Pilot · …
@@ -640,13 +685,15 @@ audit. Three medium issues are fixed here.
   option says "applications open".
 
 ### Deviations from BRD/TAD (and why)
+
 - The report offered "list only cycles with an open window". Closed cycles stay listed, after
   the open ones, because students training in them use the Courses page to see their own
   application and course.
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (no new data) ·
-  [x] strings externalized (en, hi, or)
+      [x] strings externalized (en, hi, or)
 
 ---
 
@@ -655,6 +702,7 @@ audit. Three medium issues are fixed here.
 The four medium-severity items from the Round 2 review. No migration.
 
 ### Built
+
 - **L3 Marking deadline:** the 48-hour trainer window now starts at the first marking or at
   the session's end, whichever comes first (`editWindow(firstMarkedAt, endsAt, …)`). Before, a
   session nobody marked had no deadline, so the window could be dodged by marking late. The
@@ -668,9 +716,9 @@ The four medium-severity items from the Round 2 review. No migration.
   institution time (422 `WINDOW_AFTER_CYCLE`, pure rules `cycleEndInstant` /
   `windowInsideCycle`), and a cycle can't be shortened before an open window closes (409
   `CYCLE_HAS_WINDOWS_OUTSIDE`).
-- **L8 Ended batches:** the admin dashboard's *Training over: still open* card lists active
+- **L8 Ended batches:** the admin dashboard's _Training over: still open_ card lists active
   batches past their end date, oldest first, with the students still waiting for a decision
-  (link to Completions) or *Ready to close* (link to the batch). `AdminDashboard.endedBatches`
+  (link to Completions) or _Ready to close_ (link to the batch). `AdminDashboard.endedBatches`
   from `batches.endedActive`.
 - Tests: +10 API tests (new `courses/__tests__/cycle-dates.int.test.ts`, rule tests for the
   window, cycle bounds and edit window, dashboard). The integration fixture now spaces its past
@@ -678,6 +726,7 @@ The four medium-severity items from the Round 2 review. No migration.
   e2e batch now runs yesterday only (was the last three days), for the same reason.
 
 ### Deviations from BRD/TAD (and why)
+
 - BR-06 says the window runs 48 h from the first marking. It still does when the session is
   marked on time; for a session not marked by its end the 48 h start at the end.
 - The report suggested windows close before the cycle starts. They may stay open into a
@@ -685,12 +734,14 @@ The four medium-severity items from the Round 2 review. No migration.
   closing after the cycle has ended is refused.
 
 ### Known gaps / follow-ups
+
 - L7 (cycles with no open window shown to students) is the one Round 2 item left, low.
 - The ended-batches card is a list, not a reminder: nothing is sent (A3 in the report).
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed (already inside the
-  rules) · [x] strings externalized (en, hi, or)
+      rules) · [x] strings externalized (en, hi, or)
 
 ---
 
@@ -700,6 +751,7 @@ The three high-severity items from the Round 2 review ("logic that doesn't make 
 migration: the statuses already existed, only nothing used them.
 
 ### Built
+
 - **L1 Close a batch:** `POST /admin/batches/:id/close` (idempotent) turns an ACTIVE batch
   CLOSED from the day after its end date (institution calendar), once no student is still
   ALLOCATED or ACTIVE. Otherwise 409 `BATCH_NOT_ENDED` or `STUDENTS_UNDECIDED` (details name
@@ -708,7 +760,7 @@ migration: the statuses already existed, only nothing used them.
   Completions. Before, nothing ever set CLOSED, so batches stayed active for ever.
 - **L2 Unmarked sessions:** attendance figures now carry `unrecorded`, the sessions that ended
   after the student joined (`allocated_at`) but are still SCHEDULED. They stay out of the
-  percentage (it counts marked sessions) and are shown beside it (*Not marked* in the batch's
+  percentage (it counts marked sessions) and are shown beside it (_Not marked_ in the batch's
   Attendance tab). Completion has a fifth check, `SESSIONS_RECORDED` (0 required), so a student
   can no longer show 100 % because half the sessions were never marked.
 - **L4 Withdraw from training:** `POST /admin/batches/:id/students/:enrollmentId/withdraw`
@@ -725,24 +777,28 @@ migration: the statuses already existed, only nothing used them.
   rules); e2e: withdraw a student, then close the batch. Access-matrix snapshot +2 routes (167).
 
 ### Deviations from BRD/TAD (and why)
+
 - BR-09 lists four completion conditions; `SESSIONS_RECORDED` is a fifth. Without it BR-08's
   percentage can be inflated by not marking sessions, which defeats the 75 % rule.
 - The BRD has no dropout or batch-closing flow. Withdrawal is admin-only (the report suggested
   trainers too); trainers can ask the training office.
 
 ### Known gaps / follow-ups
+
 - The 48-hour window still starts at first marking, so a session can be marked late (L3, medium).
 - Closing doesn't notify trainers, and nothing closes batches automatically (A1 in the report).
 
 ### Definition of done
+
 - [x] lint · [x] typecheck · [x] tests · [x] openapi.yaml · [x] seed · [x] strings externalized
-  (en, hi, or)
+      (en, hi, or)
 
 ---
 
 ## Sprint 13 — Hardening, quality and final submission (built, 2026-10-26)
 
 ### Built
+
 - **Security suite** (`apps/api/src/__tests__/security.int.test.ts`). It reads the app's own
   route table (156 routes), so a new route is covered without editing the test:
   - the access matrix (who may call each route) is pinned as a snapshot, so any change shows up
@@ -755,6 +811,7 @@ migration: the statuses already existed, only nothing used them.
 
   Mutation-checked: dropping a role check or an ownership check makes it fail. Public responses
   now also check values (no email or roll number anywhere), not only key names.
+
 - **Reliability** (`reliability.int.test.ts`): a database fault forced in the middle of
   completion approval and of allocation confirm leaves no partial change, and the same action
   succeeds once the fault is gone. Scheduled jobs record their last success
@@ -803,6 +860,7 @@ migration: the statuses already existed, only nothing used them.
   - README with an architecture diagram.
 
 ### Deviations
+
 - **k6 runs in GitHub Actions, not against the live site.** 100 users from one address would
   trip the live flood limiter and use the free quota. The workflow is manual and free on a
   public repository.
@@ -814,9 +872,10 @@ migration: the statuses already existed, only nothing used them.
   simpler explanations (BRQ-17.3), gap resources in assistant answers (BRQ-17.4).
 
 ### Definition of done
+
 - [x] lint · typecheck · prettier · `i18n:check --strict` · `docs:check` · build · bundle budget
 - [x] API: 49 suites, 381 tests passing; coverage 91.22 % statements, 73.43 % branches,
-  90.93 % functions, 93.12 % lines
+      90.93 % functions, 93.12 % lines
 - [x] e2e: 65 tests passing locally on desktop and phone (including a11y and security specs)
 - [x] openapi.yaml valid (0 errors); Postman collection regenerated
 - [x] Seed: records the analytics refresh; screenshots come from a fresh seed
@@ -827,6 +886,7 @@ migration: the statuses already existed, only nothing used them.
 ## Sprint 12 — Multilingual and low-bandwidth (F16), outcome analytics (F20), AI training assistant (F17) (built, 2026-10-26)
 
 ### Built
+
 - **A) Multilingual and low-bandwidth** (F16):
   - Every Hindi and Odia string is filled in, for all namespaces. `i18n:check` now runs
     `--strict`, so CI fails on a missing or empty string or a placeholder mismatch.
@@ -890,6 +950,7 @@ migration: the statuses already existed, only nothing used them.
   - The browser upload helper is shared by evidence and materials (`lib/upload.ts`).
 
 ### Deviations
+
 - **Translations are machine-drafted.** They pass the strict completeness check, but a native
   Odia and Hindi speaker should review them (`locales/REVIEW.md`) before the pilot.
 - **Embeddings come from Voyage AI** (Anthropic has no embedding model). Production needs
@@ -909,6 +970,7 @@ migration: the statuses already existed, only nothing used them.
   which can carry only padding bits and decode to the same signature.
 
 ### Known gaps / follow-ups
+
 - Going live with the assistant needs, in Vercel: `AI_ENABLED=true`, `ANTHROPIC_API_KEY`,
   `AI_MONTHLY_CAP`, `EMBEDDING_PROVIDER=voyage`, `VOYAGE_API_KEY`. Then upload and approve at
   least one material per pilot course.
@@ -917,15 +979,16 @@ migration: the statuses already existed, only nothing used them.
   add none.
 
 ### Definition of done
+
 - [x] Unit: analytics rates (zero denominators, late as present); chunking (sizes, overlap,
-  empty text); guard order (off, daily limit, cap of 0); similarity threshold; cost.
+      empty text); guard order (off, daily limit, cap of 0); similarity threshold; cost.
 - [x] Integration: analytics views and placements; materials (PDF approve with 1024-dim
-  vectors, empty file, wrong-course key, admin only); ask (switch off, cap, daily limit, no
-  model call below the threshold, own course only, no personal data sent, practice
-  validation, off-topic, usage). Full API suite: 46 suites, 360 tests.
+      vectors, empty file, wrong-course key, admin only); ask (switch off, cap, daily limit, no
+      model call below the threshold, own course only, no personal data sent, practice
+      validation, off-topic, usage). Full API suite: 46 suites, 360 tests.
 - [x] e2e: `i18n.spec.ts` and `assistant.spec.ts` (admin uploads and approves a real PDF; the
-  student gets a cited answer, checks a practice question and is declined off-topic; axe
-  clean on both pages).
+      student gets a cited answer, checks a practice question and is declined off-topic; axe
+      clean on both pages).
 - [x] lint · typecheck · prettier · `i18n:check --strict` · build · bundle budget
 - [x] openapi.yaml: analytics, placements, assistant, materials and the analytics cron
 - [x] Strings externalized in en, hi and or
@@ -935,6 +998,7 @@ migration: the statuses already existed, only nothing used them.
 ## Sprint 11 — Smart scheduling (F14), practical evidence (F18), career matcher (F13) (built, 2026-10-26)
 
 ### Built
+
 - **R3 tables**: migration `20261026033923_r3_evidence_opportunities` adds `rubrics`,
   `practical_evidence`, `job_roles`, `job_role_competencies`, `opportunities` and
   `opportunity_interests`. DB checks: role levels 1–4; evidence is either a stored file
@@ -964,12 +1028,14 @@ migration: the statuses already existed, only nothing used them.
     - development and tests: an HMAC-signed local URL.
 
     The browser uploads directly, never through the API function.
+
   - `POST /results/:id/evidence` records the file or https video link, the course competency it
     proves (BRQ-18.3) and rubric scores. Checks:
     - the file must exist in the store under the result's prefix, with an allowed type and size;
     - a file attaches once.
 
     Audited.
+
   - `GET /evidence/:id/url` returns a 5-minute signed link (`presignUrl` on Blob). It is for the
     batch's trainers, admins and the student the evidence belongs to.
   - `GET /assessments/:id/evidence` returns the trainer's sheet.
@@ -1003,6 +1069,7 @@ migration: the statuses already existed, only nothing used them.
   (idempotent, audited).
 
 ### Deviations
+
 - **Trainer double-booking blocks only when the trainer is named on both sessions.** A session
   with no named trainer is taught by the batch's assigned trainers. Blocking every overlap
   through assignment would reject real schedules, such as the seeded trainer, who teaches the
@@ -1022,12 +1089,14 @@ migration: the statuses already existed, only nothing used them.
   collides across runs of the shared test databases.
 
 ### Known gaps / follow-ups
+
 - Production uploads use Vercel Blob client tokens and signed GET URLs. Tests cover the local
   driver. **Checked live on 2026-10-26**: a photo uploaded on the deployed site and opened in a
   new tab through its signed link.
 - The seed adds no rubric or evidence: they need a trainer's real photos.
 
 ### Definition of done
+
 - [x] Unit:
   - overlap boundaries (end == start is not a clash; containment and identical times clash);
   - venue normalisation;
@@ -1071,13 +1140,14 @@ migration: the statuses already existed, only nothing used them.
   - the student sees the evidence in the passport and a 100 % match, and marks interest;
   - the admin sees the interested student.
 - [x] API_TESTS (336, 42 suites) · E2E_TESTS (39) · lint · format · typecheck · build · i18n
-  keys in sync · openapi.yaml (116 paths)
+      keys in sync · openapi.yaml (116 paths)
 
 ---
 
 ## Sprint 10 — Early Intervention (F11) and audit viewer (F19) → GATE 2 (done, Gate 2 passed 2026-10-26)
 
 ### Built
+
 - **Risk rules** (`modules/intervention/rules.ts`, pure, unit-tested at the BRD boundaries):
   - `riskLevel(facts, thresholds)` returns a level and every reason (BR-16, BR-18).
     - Medium: attendance < 80 %, ≥ 3 consecutive absences, or the latest assessment < 50 %.
@@ -1152,6 +1222,7 @@ migration: the statuses already existed, only nothing used them.
   load, so it now has an explicit 30 s timeout.
 
 ### Deviations
+
 - **Lease row instead of a session advisory lock for the whole run.** Production uses Neon's
   pooled URL (PgBouncer transaction mode, `connection_limit=1`). A session advisory lock is
   released as soon as the connection returns to the pool, and holding one transaction open
@@ -1174,6 +1245,7 @@ migration: the statuses already existed, only nothing used them.
   flags them.
 
 ### Known gaps / follow-ups
+
 - The admin can revoke a competency verification through the API (Sprint 9); there is no
   screen for it yet. The audit viewer shows those revocations.
 - The daily run evaluates batches one at a time. On a much larger live database it could need
@@ -1181,7 +1253,9 @@ migration: the statuses already existed, only nothing used them.
   scale.
 
 ### GATE 2 checklist (BRD §15)
+
 Locally (CI-equivalent), all pass:
+
 - [x] **F10** (BRD §9.2): a certified student opens their passport and sees each verified
       competency with level and date; a shared link opens without login; after revocation it
       shows "Link no longer active". Covered by `passport.spec.ts` on desktop and mobile
@@ -1202,6 +1276,7 @@ Locally (CI-equivalent), all pass:
       **Gate 2 passed: R3 (Sprint 11) may start.**
 
 ### Definition of done
+
 - [x] Unit: risk boundaries (74.99/75.00, 79.99/80.00, 49.99/50, 39.99/40, 15.00/14.99 drop,
       3 absences), lifecycle (open/update/clearing/close at 7 days, not 6.99), escalation at
       14 days, once
@@ -1222,6 +1297,7 @@ Locally (CI-equivalent), all pass:
 ## Sprint 9 — Skill Passport (F10) and QR verification (F15) (done, 2026-10-24)
 
 ### Built
+
 - **Public router** (`modules/verification`, `/api/v1/public`, CLAUDE.md rule 7):
   - No authentication. A named rate limiter (Postgres-backed in production, so every
     serverless instance shares it) applies the existing setting `public.rateLimitPerMin` (30)
@@ -1282,6 +1358,7 @@ Locally (CI-equivalent), all pass:
   cleared only when a real session ends.
 
 ### Deviations
+
 - **No five-minute shared cache on verification responses.** TAD §8.3 has the response
   cacheable for 5 minutes with the cache purged on revocation, but Vercel's CDN can't be
   purged per key from the app. Responses are `Cache-Control: no-cache` with an ETag: browsers
@@ -1294,12 +1371,14 @@ Locally (CI-equivalent), all pass:
 - **Reissue is only from VALID**; a revoked certificate is not reissued.
 
 ### Known gaps / follow-ups
+
 - Photos (`students.photo_url`) exist in the schema but there is no upload yet (F18 evidence
   storage in Sprint 11 could carry it).
 - The admin can revoke a competency verification through the API; a screen for it would sit
   in the Sprint 10 audit viewer.
 
 ### Definition of done
+
 - [x] API: valid → whitelisted keys; unknown/malformed → 404 (TC-18); revoked → date, no
       reason; reissue → old SUPERSEDED and linked, enrollment stays CERTIFIED; 31st public
       request → 429; passport practical/theory/certificates; trainer reads it, other student
@@ -1320,6 +1399,7 @@ Locally (CI-equivalent), all pass:
 Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 
 ### Built
+
 - **Pure rules** (`competency/rules.ts`):
   - `provisionalLevel`: linked-assessment % → level from the new setting
     `competency.provisionalBands` (L2 40, L3 60, L4 85; below 40 → 1).
@@ -1385,6 +1465,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 - **Fix**: the tab row no longer shows a stray vertical scrollbar (`overflow-y-hidden`).
 
 ### Deviations
+
 - **No "drawer"**: the competency and resource forms use the existing accessible dialog.
 - **Ratings are keyed per student, competency and batch**, with "latest" being the current
   row; the audit log keeps every earlier value.
@@ -1393,12 +1474,14 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 - **Ratings are allowed only while the batch is ACTIVE.**
 
 ### Known gaps / follow-ups
+
 - F11 flags from mandatory gaps (BR-18 second half) arrive in Sprint 10, using
   `mandatoryGaps`.
 - Linked assessments are per batch; a new batch's assessments must be linked again in the
   editor.
 
 ### Definition of done
+
 - [x] Unit: provisional bands, demonstrated level, gap (0, 1, 2 BRD case, not assessed),
       verification rule, module boundary
 - [x] API: CRUD, unique codes, foreign links, delete guard, bulk ratings, verify below
@@ -1416,6 +1499,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Sprint 7 — Reports, dashboards, end-to-end → GATE 1 (done, gate passed, 2026-10-23)
 
 ### Built
+
 - **Figures owned by each module, aggregated in SQL** (rule 5: the dashboard and reports call
   service functions and never read other modules' tables):
   - `users.activeCounts`, `courses.activeCourseCount`, `batches.statusCounts` and
@@ -1475,23 +1559,25 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   refused (429).
 
 ### NFR-04: core tasks within three clicks of the dashboard
-| Role | Task | Clicks from the dashboard |
-| --- | --- | --- |
-| Admin | Users, Courses & cycles, Enrollments, Batches, Completion, Certificates, Reports | 1 (sidebar or quick link) |
-| Admin | Open an enrollment window | 2 (Courses & cycles → Edit window) |
-| Admin | Approve an application | 2 (Enrollments → Approve) |
-| Admin | Run allocation | 2 (Batches → Run allocation) |
-| Admin | Approve completion | 2 (Completion → pick batch → Approve: 3) |
-| Admin | Download a batch or course report | 2–3 (Reports → pick → CSV/PDF) |
-| Trainer | Take attendance for a pending session | 1 ("Take attendance" on the dashboard) |
-| Trainer | Enter marks | 2 (Assessments → Enter marks) |
-| Trainer | Final evaluation | 3 (My batches → batch → Evaluations tab; the dialog opens on the 4th click) |
-| Student | Apply for a course | 2 (Courses → Apply) |
-| Student | Track application | 1 (My enrollment) |
-| Student | Attendance, results, grade | 0 (on the dashboard) / 1 (My training) |
-| Student | Download certificate / performance report | 1 (button on the dashboard) |
+
+| Role    | Task                                                                             | Clicks from the dashboard                                                   |
+| ------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Admin   | Users, Courses & cycles, Enrollments, Batches, Completion, Certificates, Reports | 1 (sidebar or quick link)                                                   |
+| Admin   | Open an enrollment window                                                        | 2 (Courses & cycles → Edit window)                                          |
+| Admin   | Approve an application                                                           | 2 (Enrollments → Approve)                                                   |
+| Admin   | Run allocation                                                                   | 2 (Batches → Run allocation)                                                |
+| Admin   | Approve completion                                                               | 2 (Completion → pick batch → Approve: 3)                                    |
+| Admin   | Download a batch or course report                                                | 2–3 (Reports → pick → CSV/PDF)                                              |
+| Trainer | Take attendance for a pending session                                            | 1 ("Take attendance" on the dashboard)                                      |
+| Trainer | Enter marks                                                                      | 2 (Assessments → Enter marks)                                               |
+| Trainer | Final evaluation                                                                 | 3 (My batches → batch → Evaluations tab; the dialog opens on the 4th click) |
+| Student | Apply for a course                                                               | 2 (Courses → Apply)                                                         |
+| Student | Track application                                                                | 1 (My enrollment)                                                           |
+| Student | Attendance, results, grade                                                       | 0 (on the dashboard) / 1 (My training)                                      |
+| Student | Download certificate / performance report                                        | 1 (button on the dashboard)                                                 |
 
 ### GATE 1 checklist
+
 - [x] **Full workflow passes on the deployed build.** `e2e/gate1.spec.ts` passed against
       https://kiss-vtmp.vercel.app on 2026-10-23 in 45.7 s (GitHub Actions workflow "Gate 1 on
       the live site", run 39934353358, started by hand). It also passes locally on desktop and
@@ -1503,37 +1589,38 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
       one certified test student (`e2e-gate-…@kiss-vtmp.test`).
 - [x] **Every R1 Must BRQ (BRD §8) is ticked with the test that proves it:**
 
-| BRQ | Proved by |
-| --- | --- |
-| 1.1 Log in and out | `auth.int` (TC-01, TC-02, lockout, rotation), `e2e/auth` |
-| 1.2 Own dashboard, server-enforced | `dashboard.int` (each role only its own), `ownership.int`, TC-15 in `completion.int` |
-| 2.1 Course CRUD | `courses.int`, `gate1.int` |
-| 2.2 Course details | `courses.int` (catalogue), `e2e/enrollment` |
-| 2.3 Open and close electives | `courses.int` (window states), `courses/rules` unit, `e2e/gate1` step 1 |
-| 3.1 Up to three ranked choices | `enrollments.int`, `e2e/enrollment`, `e2e/gate1` |
-| 3.2 One active enrollment, window only | `enrollments.int` (TC-03, TC-04), `constraints.int` (BR-01 index) |
-| 3.3 Approve, reject, waitlist (bulk) | `enrollments.int` (TC-05, bulk rollback), `e2e/gate1` |
-| 3.4 Status and reasons | `e2e/enrollment` (status, notification), `enrollments.int` timeline |
-| 4.1 Batches | `batches.int`, `e2e/batches` |
-| 4.2 Allocation with preview | `allocation.int`, `batches/rules` unit, `e2e/batches`, `e2e/gate1` |
-| 4.3 Trainers and sessions | `batches.int`, `e2e/gate1` |
-| 4.4 Capacity and waitlist | `batches/rules` unit (capacity), `batches.int` (TC-06, TC-07), `allocation.int` |
-| 5.1 Mark own batches only | `attendance.int` (TC-08), `e2e/training`, `e2e/gate1` |
-| 5.2 48 h edit window, admin override | `attendance/rules` unit (47:59/48:00/48:01), `attendance.int` (override with reason) |
-| 5.3 Attendance % and absenteeism | `attendance/rules` unit (74.99/75), `attendance.int`, `dashboard.int` (low attendance) |
-| 6.1 Assessments | `assessments.int` |
-| 6.2 Marks 0..max | `assessments.int` (TC-10, nothing saved on error), `constraints.int` (DB trigger), `e2e/training` |
-| 6.3 Milestones and evaluation | `assessments.int`, `e2e/gate1` |
-| 6.4 Weighted aggregate and grade | `assessments/rules` unit (band boundaries), `e2e/training` (90 % → A) |
-| 7.1 Eligibility | `completion/rules` unit (TC-13, TC-14, 39.99/40), `completion.int` |
+| BRQ                                            | Proved by                                                                                           |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1.1 Log in and out                             | `auth.int` (TC-01, TC-02, lockout, rotation), `e2e/auth`                                            |
+| 1.2 Own dashboard, server-enforced             | `dashboard.int` (each role only its own), `ownership.int`, TC-15 in `completion.int`                |
+| 2.1 Course CRUD                                | `courses.int`, `gate1.int`                                                                          |
+| 2.2 Course details                             | `courses.int` (catalogue), `e2e/enrollment`                                                         |
+| 2.3 Open and close electives                   | `courses.int` (window states), `courses/rules` unit, `e2e/gate1` step 1                             |
+| 3.1 Up to three ranked choices                 | `enrollments.int`, `e2e/enrollment`, `e2e/gate1`                                                    |
+| 3.2 One active enrollment, window only         | `enrollments.int` (TC-03, TC-04), `constraints.int` (BR-01 index)                                   |
+| 3.3 Approve, reject, waitlist (bulk)           | `enrollments.int` (TC-05, bulk rollback), `e2e/gate1`                                               |
+| 3.4 Status and reasons                         | `e2e/enrollment` (status, notification), `enrollments.int` timeline                                 |
+| 4.1 Batches                                    | `batches.int`, `e2e/batches`                                                                        |
+| 4.2 Allocation with preview                    | `allocation.int`, `batches/rules` unit, `e2e/batches`, `e2e/gate1`                                  |
+| 4.3 Trainers and sessions                      | `batches.int`, `e2e/gate1`                                                                          |
+| 4.4 Capacity and waitlist                      | `batches/rules` unit (capacity), `batches.int` (TC-06, TC-07), `allocation.int`                     |
+| 5.1 Mark own batches only                      | `attendance.int` (TC-08), `e2e/training`, `e2e/gate1`                                               |
+| 5.2 48 h edit window, admin override           | `attendance/rules` unit (47:59/48:00/48:01), `attendance.int` (override with reason)                |
+| 5.3 Attendance % and absenteeism               | `attendance/rules` unit (74.99/75), `attendance.int`, `dashboard.int` (low attendance)              |
+| 6.1 Assessments                                | `assessments.int`                                                                                   |
+| 6.2 Marks 0..max                               | `assessments.int` (TC-10, nothing saved on error), `constraints.int` (DB trigger), `e2e/training`   |
+| 6.3 Milestones and evaluation                  | `assessments.int`, `e2e/gate1`                                                                      |
+| 6.4 Weighted aggregate and grade               | `assessments/rules` unit (band boundaries), `e2e/training` (90 % → A)                               |
+| 7.1 Eligibility                                | `completion/rules` unit (TC-13, TC-14, 39.99/40), `completion.int`                                  |
 | 7.2 Certificate after approval, random ID, PDF | `completion.int` (TC-16, TC-17, idempotent, retry), `documents` unit, `e2e/completion`, `e2e/gate1` |
-| 7.3 Register of certificates | `completion.int` (register search), `e2e/completion` |
-| 8.1 Student report PDF | `reports.int` (snapshot, access), `e2e/gate1` (student download) |
-| 9.1 Admin counts | `dashboard.int`, `e2e/gate1` |
-| 9.3 Role dashboards | `dashboard.int` (trainer, student) |
-| 9.4 Completion queue with eligibility | `completion.int` (queue with checks) |
+| 7.3 Register of certificates                   | `completion.int` (register search), `e2e/completion`                                                |
+| 8.1 Student report PDF                         | `reports.int` (snapshot, access), `e2e/gate1` (student download)                                    |
+| 9.1 Admin counts                               | `dashboard.int`, `e2e/gate1`                                                                        |
+| 9.3 Role dashboards                            | `dashboard.int` (trainer, student)                                                                  |
+| 9.4 Completion queue with eligibility          | `completion.int` (queue with checks)                                                                |
 
-  The Shoulds are built too: 1.3 (`users.int`), 8.2 (`reports.int`) and 9.2 (charts).
+The Shoulds are built too: 1.3 (`users.int`), 8.2 (`reports.int`) and 9.2 (charts).
+
 - [x] **Audit rows for every attendance, marks, enrollment and completion change.**
       `gate1.int.test` runs the workflow through the API and finds ENROLLMENT_SUBMITTED →
       APPROVED → ALLOCATED → ACTIVE, ATTENDANCE_MARKED per session, RESULT_RECORDED,
@@ -1542,6 +1629,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 - [x] **No R2 work started.**
 
 ### Deviations
+
 - **Trainers can't download a student's performance report** (BRD §12.2 lists Student and
   Admin); they have the batch report.
 - **Dashboard windows (8-week trend, 14-day pending lookback) are display choices, not
@@ -1552,12 +1640,14 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   data, while certificates keep their stored PDF.
 
 ### Known gaps / follow-ups
+
 - Each live Gate 1 run adds a set of test data to the demo; run it only when needed.
 - Charts are light-only (the app has no dark theme yet).
 - The batch report PDF shows a count of recorded assessments, not each mark (those are in the
   CSV), to stay readable with many assessments.
 
 ### Definition of done
+
 - [x] 242 API tests (31 suites) · 31 e2e (desktop + mobile, axe) · lint · format ·
       typecheck · build · i18n keys in sync · openapi.yaml (72 paths)
 
@@ -1566,6 +1656,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Between Sprints 6 and 7 — Leftovers (done, 2026-10-23)
 
 ### Built
+
 - **Word TAD** (`docs/KISS_VTMP_TAD_v1.0.docx`) now names the storage chosen in Sprint 6: a
   private Vercel Blob store, in Amendment 1, the technology table (File storage), §11
   Deployment architecture and the environment-variable list (`BLOB_READ_WRITE_TOKEN`,
@@ -1581,9 +1672,11 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   - Sprint 7's chart library (Recharts) will load only on the dashboard and report pages.
 
 ### Deviations
+
 - Code splitting was planned for Sprint 12 and was done now, before Sprint 7 adds charts.
 
 ### Definition of done
+
 - [x] 29 e2e (desktop + mobile, axe) · lint · format · typecheck · build · i18n keys in sync
 
 ---
@@ -1591,6 +1684,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Sprint 6 — Completion engine and certificates (done, 2026-10-23)
 
 ### Built
+
 - **Eligibility** (`completion/rules.ts eligibility`, pure, BR-09): four checks, each reported
   with passed / actual / required, so the admin sees every reason at once (BRQ-9.4):
   attendance ≥ `attendance.minPercent`, every mandatory assessment recorded, aggregate ≥
@@ -1649,6 +1743,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   (attendance, not recommended). It fills only what is missing.
 
 ### Deviations
+
 - **Storage is a private Vercel Blob store** (TAD left Blob vs Neon open). It's on the
   existing Vercel account, with no card or new service. `docs/TAD.md` §4/§11 and
   `docs/DEPLOYMENT.md` (new step 3a) are updated. The Word TAD still says "chosen in
@@ -1663,12 +1758,14 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   corrected.
 
 ### Known gaps / follow-ups
+
 - Revoke / reissue (BR-19 statuses REVOKED/SUPERSEDED) and the public verify page come in
   Sprint 9. The register already shows the status.
 - Certificates are English-only for now (TAD §15 fallback); only Odia names are typeset in Odia.
 - Main JS bundle keeps growing (now ~930 kB minified). Route-level code splitting is due.
 
 ### Definition of done
+
 - [x] A seeded or freshly trained student goes from approval to a downloadable certificate PDF
       (Playwright desktop + mobile: admin queue with checklist, approve, not completed with
       reason, register search; student dashboard card and PDF download; axe on queue,
@@ -1688,6 +1785,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Sprint 5 — Attendance, assessments, progress and evaluations (done, 2026-10-19)
 
 ### Built
+
 - **Pure rules** (unit-tested at the boundaries):
   - `attendance/rules.ts`: `isAttended` (LATE counts when `attendance.lateCountsAsPresent`),
     `attendancePercent` (two decimals, null before any conducted session; 74.99 vs 75),
@@ -1738,6 +1836,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   and there are two progress notes. Re-seeding skips it.
 
 ### Deviations
+
 - No new migration: Sprint 1 already created every table and DB check (BR-07 trigger,
   `first_marked_at`).
 - The BRD (BRQ-5.2) doesn't say when the 48 h start. We count from the session's first save
@@ -1748,11 +1847,13 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   view gets risk flags in Sprint 10.
 
 ### Known gaps / follow-ups
+
 - Evaluations aren't yet tied to completion. Sprint 6 uses them with attendance and aggregate
   for eligibility and certificates.
 - Main JS bundle 904 kB (232 kB gzip); route-level code splitting is getting due.
 
 ### Definition of done
+
 - [x] Trainer marks attendance and enters marks (inline range error first); the student sees
       100 % attendance, 45 / 50, aggregate 90.00 % and grade A at once (Playwright desktop +
       mobile, axe on the sheet, marks page and My training)
@@ -1766,6 +1867,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Sprint 4 — Batches, allocation engine, trainers, sessions (done, 2026-10-19)
 
 ### Built
+
 - **Allocation engine** (`modules/batches/rules.ts allocate`, pure, O(n log n + n·p)):
   - Applicants are sorted once by `allocation.priorityRule`: submission time, or CGPA desc
     with submission time and then id breaking ties, so results are deterministic.
@@ -1823,6 +1925,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   trainer1, Solar → trainer2, Tailoring → trainer3), ready for an allocation demo.
 
 ### Deviations
+
 - **Previews are stored in Postgres**, not in memory, because of serverless hosting.
 - **Moves and placements are limited to courses the student chose**; that rule isn't in the
   BRD, but it stops placing students in courses they never asked for.
@@ -1831,12 +1934,14 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 - **Clash and double-booking checks are not here** (Sprint 11, F14).
 
 ### Known gaps / follow-ups
+
 - Main JS bundle is still under NFR-10 but growing. Route-level code splitting should come
   soon.
 - Removing a student from an ACTIVE batch is blocked; withdrawals mid-training will be handled
   with attendance/completion (Sprint 5–6).
 
 ### Definition of done
+
 - [x] Approved students allocated via preview → confirm; the trainer sees the roster; the
       student sees their batch (Playwright desktop + mobile, axe on allocation, batch detail
       and trainer pages)
@@ -1852,6 +1957,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Sprint 3 — Courses, electives and enrollment (done, 2026-10-19)
 
 ### Built
+
 - **`modules/courses`**:
   - **Catalogue** (`GET /courses?cycleId=`, `GET /courses/:id`, `GET /cycles`; any signed-in
     user): active courses offered in the cycle with description, duration, prerequisites,
@@ -1885,7 +1991,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   `IDEMPOTENCY_KEY_REUSED`, and a key still in flight gives 409. On error the key is released.
   Keys are kept 24 h. Used on submit, approve/reject/waitlist and bulk.
 - **`modules/notifications`**: `notify(tx, …)` inside the business transaction; `GET
-  /notifications/me` (+ unread count), mark one / all read (scoped per user, someone else's →
+/notifications/me` (+ unread count), mark one / all read (scoped per user, someone else's →
   404). Stored as `type` + `data` so the web app renders them through `t()`.
 - **`core/audit.history()`**: read-only audit trail per record (used for the status timeline).
 - **Web**:
@@ -1908,6 +2014,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   note.
 
 ### Deviations
+
 - **`WITHDRAWN` status** added, so students can withdraw a pending application and re-apply.
   It doesn't count as active for BR-01.
 - **Seats remaining is indicative**: capacity minus approved-or-later applications counted
@@ -1918,6 +2025,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 - The default review filter is PENDING, so the queue opens on work to do.
 
 ### Known gaps / follow-ups
+
 - No drag-and-drop ranking: up/down buttons cover the same need accessibly.
 - Prerequisites are informational text; nothing checks them automatically (the BRD doesn't
   define a machine-checkable prerequisite).
@@ -1926,6 +2034,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   it passes ~300 kB gzip.
 
 ### Definition of done
+
 - [x] A seeded student applies, the admin approves, and the student sees APPROVED at once
       (Playwright, desktop + mobile, with axe on catalogue, apply, my enrollment and admin pages)
 - [x] TC-03 (window closed: closed/off/upcoming/inactive/not offered), TC-04 (duplicate,
@@ -1938,6 +2047,7 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
 ## Sprint 2 — Auth, RBAC, ownership, role dashboards, first deploy (done, 2026-10-19)
 
 ### Built
+
 - **`core/auth`** (kernel shared by all modules): bcrypt hashing (cost from `BCRYPT_ROUNDS`,
   default 12) with a timing-equalising check for unknown emails; HS256 access JWT, 15 min,
   issuer/audience checked; refresh tokens = 32 random bytes, stored as a keyed SHA-256 hash,
@@ -1975,10 +2085,12 @@ Release 2 starts here; Gate 1 passed on the live site first (Sprint 7).
   Locally and in CI the API still runs as a normal server.
 
 ### NFR-04: three clicks from the dashboard
+
 Every navigation entry is one click from each dashboard (sidebar + quick links). Profile and
 password are two clicks via the account menu.
 
 ### Deviations
+
 - Auth middleware and ownership resolvers live in `core/auth` (kernel), not `modules/auth`,
   so every module can use them without importing another module.
 - Per-IP limit counts **failed** logins only (`skipSuccessfulRequests`); refresh is not
@@ -2002,6 +2114,7 @@ password are two clicks via the account menu.
   (documented trade-off of strict rotation).
 
 ### First deploy (2026-10-19)
+
 - Live at **https://kiss-vtmp.vercel.app** (Vercel Hobby, function region sin1; Neon Postgres
   16, Singapore). Migrations ran in the production build, the demo data was seeded, and admin,
   trainer and student each signed in to their own dashboard. `PUBLIC_BASE_URL` is now fixed.
@@ -2021,14 +2134,16 @@ password are two clicks via the account menu.
     smoke-tests the live site after each push to main.
 
 ### Known gaps / follow-ups
+
 - Password reset by email is out of scope (BRD); admins can create accounts and reactivate.
 
 ### Definition of done
+
 - [x] lint · format · typecheck · build · i18n keys in sync
 - [x] API tests incl. TC-01, TC-02, TC-15, lockout, rotation, reuse detection,
       expired/forged tokens, trainer → other batch 403, shared Postgres rate-limit store
 - [x] 17 Playwright tests (desktop + mobile), axe clean on login, dashboards and Users
-- [x] openapi.yaml: /auth/*, /users/me*, /admin/users*
+- [x] openapi.yaml: /auth/_, /users/me_, /admin/users*
 - [x] All three roles sign in on the deployed URL (https://kiss-vtmp.vercel.app)
 
 ---
@@ -2036,6 +2151,7 @@ password are two clicks via the account menu.
 ## Sprint 1 — Full schema, seed, settings and audit kernel (done, 2026-10-19)
 
 ### Built
+
 - **Schema** (`prisma/schema.prisma`, migration `*_r1_r2_schema`): all R1 core tables (TAD §6.1)
   and R2 tables (§6.2) — 31 tables, UUID keys, snake_case, every FK indexed. Additions beyond the
   prompt list: `users.full_name`, `last_login_at`; `refresh_tokens.family_id` + `replaced_by_id`
@@ -2069,6 +2185,7 @@ password are two clicks via the account menu.
   Integration tests migrate `vtmp_test` automatically (Jest global setup) and run in band.
 
 ### Deviations
+
 - `IdempotencyKey` stores `request_hash`, `response_status` and `response_body` (instead of
   only a response hash) because Sprint 3 must replay the exact response.
 - Grade bands are one Setting (`grade.bands`) validated as strictly descending, instead of four.
@@ -2077,12 +2194,14 @@ password are two clicks via the account menu.
 - `Progress.student_id` is optional so a milestone can apply to a whole batch.
 
 ### Known gaps / follow-ups
+
 - The app's DB role still owns `audit_logs`; TAD §6.3 also wants UPDATE/DELETE revoked from it.
   The triggers already block both; a separate least-privilege role belongs with deployment
   (Sprint 2).
 - Seed passwords are dev-only and documented in the README.
 
 ### Definition of done
+
 - [x] `pnpm db:migrate && pnpm db:seed` on a fresh DB (seed re-run is a no-op; `--large` works)
 - [x] lint · format · typecheck · 49 API tests (21 unit + 28 integration) pass
 - [x] docs/ER.md · README seed accounts · no new endpoints (openapi unchanged)
@@ -2092,6 +2211,7 @@ password are two clicks via the account menu.
 ## Sprint 0 — Monorepo foundation (done, 2026-10-19)
 
 ### Built
+
 - **Monorepo** (pnpm workspaces): `apps/api`, `apps/web`, `packages/shared`, `prisma/`.
   Strict TypeScript everywhere from `tsconfig.base.json`; `@vtmp/shared` consumed as TS source.
 - **API kernel** (`apps/api/src/core`):
@@ -2132,16 +2252,19 @@ password are two clicks via the account menu.
   PostgreSQL → build + e2e; deploy job stubbed).
 
 ### Deviations
+
 - Seed is a connection check only; real seed data is Sprint 1 scope.
 - `CLAUDE.md` and the sprint prompts are kept locally (git-ignored) by team choice.
 - Health also lives at `/health` (outside `/api/v1`) for uptime monitors (TAD §13).
 
 ### Known gaps / follow-ups
+
 - Main JS chunk is ~594 kB minified / ~177 kB gzip. Fine for NFR-10 (<500 kB transferred) but
   route-level code splitting is due in Sprint 12.
 - Playwright needs `playwright install chromium` once per machine.
 
 ### Definition of done
+
 - [x] lint · [x] format · [x] typecheck · [x] build
 - [x] tests: 17 unit + 1 integration (real PostgreSQL) · 8 e2e (desktop + mobile, axe clean)
 - [x] `pnpm db:up && pnpm dev` → web shows the shell, `GET /api/v1/health` →
@@ -2149,5 +2272,6 @@ password are two clicks via the account menu.
 - [x] openapi.yaml · [x] strings externalized · [x] language switcher persists
 
 ### Notes for the next session
+
 - Prisma Client is generated by the **root** `postinstall` only. Letting `@prisma/client` and
   `apps/api` both generate during install raced and left an uninitialised client.
