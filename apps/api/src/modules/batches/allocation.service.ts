@@ -62,9 +62,7 @@ async function snapshot(client: Tx, cycleId: string): Promise<Snapshot> {
 function fingerprint(s: Snapshot, rule: string): string {
   const h = createHash('sha256').update(rule);
   for (const a of [...s.applicants].sort((x, y) => x.enrollmentId.localeCompare(y.enrollmentId))) {
-    h.update(
-      `|a:${a.enrollmentId}:${a.updatedAt.toISOString()}:${a.preferences.join(',')}:${a.cgpa}`,
-    );
+    h.update(`|a:${a.enrollmentId}:${a.updatedAt.toISOString()}:${a.preferences.join(',')}`);
   }
   for (const b of [...s.batches].sort((x, y) => x.id.localeCompare(y.id))) {
     h.update(`|b:${b.id}:${b.capacity}:${b.status}:${b.members}`);
@@ -95,7 +93,6 @@ export async function preview(
       enrollmentId: a.enrollmentId,
       preferences: a.preferences,
       submittedAt: a.submittedAt,
-      cgpa: a.cgpa,
     })),
     snap.batches.map((b) => ({
       batchId: b.id,

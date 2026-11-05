@@ -30,7 +30,7 @@ test.describe('Sprint 12: Odia and Hindi (F16, BRQ-16.1)', () => {
     };
     const created = await request.post('/api/v1/admin/users', {
       headers: { Authorization: admin },
-      data: { role: 'STUDENT', ...student, rollNo: `LG-${s}`, cgpa: 7.5 },
+      data: { role: 'STUDENT', ...student, rollNo: `LG-${s}` },
     });
     expect(created.ok()).toBeTruthy();
 

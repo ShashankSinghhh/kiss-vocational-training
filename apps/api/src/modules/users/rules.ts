@@ -35,7 +35,7 @@ export function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.some((c) => c.trim() !== ''));
 }
 
-export const IMPORT_FIELDS = ['email', 'fullName', 'rollNo', 'cgpa', 'phone'] as const;
+export const IMPORT_FIELDS = ['email', 'fullName', 'rollNo', 'phone'] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
 /** Column names accepted for each field, compared without case, spaces or punctuation. */
@@ -43,10 +43,9 @@ const ALIASES: Record<ImportField, string[]> = {
   email: ['email', 'emailaddress', 'mail'],
   fullName: ['fullname', 'name', 'studentname'],
   rollNo: ['rollno', 'rollnumber', 'roll'],
-  cgpa: ['cgpa', 'gpa'],
   phone: ['phone', 'phonenumber', 'mobile'],
 };
-const REQUIRED: ImportField[] = ['email', 'fullName', 'rollNo', 'cgpa'];
+const REQUIRED: ImportField[] = ['email', 'fullName', 'rollNo'];
 const norm = (h: string) => h.toLowerCase().replace(/[^a-z]/g, '');
 
 /**

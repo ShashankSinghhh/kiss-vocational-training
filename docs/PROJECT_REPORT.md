@@ -88,6 +88,9 @@ approval; batch allocation; sessions and attendance; assessments and marks; comp
 certificates; reports and dashboards; notifications; the Skill Passport, early intervention,
 skill gap analysis and public certificate verification.
 
+Vocational training is open to every student: the system does not record or use academic
+marks (CGPA) to approve, allocate or rank anyone.
+
 **Out of scope:** fees and payments, payroll, hosting course content, biometric attendance and
 native mobile apps.
 
@@ -139,7 +142,7 @@ business rules and 14 quality requirements, each with an ID that the code and te
 | BR-01 | One active application per student per training cycle |
 | BR-02 | Applications only while the course's enrollment window is open |
 | BR-03 | A batch never goes over capacity; extra approved students are waitlisted |
-| BR-04 | Allocation follows preference rank, then the priority rule (submission time or CGPA) |
+| BR-04 | Allocation follows preference rank, then submission time; academic marks are never used |
 | BR-05 | Trainers act only on batches assigned to them |
 | BR-06 | Attendance can be changed for 48 hours, then only by an admin with a reason |
 | BR-08 | Attendance % = sessions attended ÷ sessions held × 100, to two decimals |
@@ -291,7 +294,7 @@ the same shape, `{ "error": { "code", "message" } }`.
 ### 7.3 Key algorithms
 
 - **Allocation (BR-03, BR-04):** approved applicants are sorted by preference rank, then by the
-  priority rule (submission time or CGPA). Each is placed in the first batch of their course with
+  submission time. Academic marks are never used. Each is placed in the first batch of their course with
   a free seat; the rest are waitlisted. The admin sees a preview first, and nothing changes until
   they confirm.
 - **Attendance and eligibility (BR-08, BR-09):** attendance % is computed on read, never stored.
@@ -300,8 +303,8 @@ the same shape, `{ "error": { "code", "message" } }`.
 - **Early intervention:** a daily job rates each student's risk from attendance, consecutive
   absences and marks (for example, Medium below 80 % attendance, High below 75 %) and alerts the
   trainer, with the reason, while there is still time to act.
-- **Automatic approval:** an application that meets the admin's saved rules (minimum CGPA, no
-  prerequisites needing review) is approved in the same transaction that saves it, and the
+- **Automatic approval:** an application that meets the admin's saved rules (no prerequisites
+  needing review) is approved in the same transaction that saves it, and the
   student is told at once.
 - **Certificate codes:** each certificate gets a random 16-character public code; the QR code
   links to the public verify page.

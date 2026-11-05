@@ -204,9 +204,9 @@ password at first sign-in* is ticked: they then see only *Change password* until
 trainer who is the only trainer of a planned or running batch can't be deactivated until
 another trainer is assigned to it.
 **Import students** creates many student accounts from a CSV file whose first line names the
-columns `email`, `fullName`, `rollNo`, `cgpa` and, if you have it, `phone` (up to 500 at a
+columns `email`, `fullName`, `rollNo` and, if you have it, `phone` (up to 500 at a
 time). Give a first password, press **Check file** and fix any row it lists (a bad email or
-CGPA, a duplicate, an email or roll number already used); nothing is created until every row is
+phone number, a duplicate, an email or roll number already used); nothing is created until every row is
 right. Then **Import**: every student signs in with that password and must choose their own.
 **Courses & cycles** manages programmes, courses, training cycles and the enrollment window of
 each course. **Programmes** group related courses (students choose a programme, then a course
@@ -231,12 +231,13 @@ no record ever loses its student, trainer or course.
 
 ![Enrollments](screenshots/admin-enrollments.jpg)
 
-1. **Enrollments → Automatic approval**: switch it on and set the rules (minimum CGPA; whether
-   courses with prerequisites need your review). From then on every application that meets
+1. **Enrollments → Automatic approval**: switch it on and choose whether
+   courses with prerequisites need your review. Academic marks are never a rule: vocational
+   training is open to every student. From then on every application that meets
    the rules is approved the moment the student submits it, and the student is told at once.
    **Approve eligible pending applications** applies the rules to what is already waiting.
 2. **Enrollments**: the applications that don't meet the rules wait in the list with the reason
-   ("CGPA 5.20 is below 6.00", "Medical Attendant has prerequisites"). Approve, waitlist or reject
+   ("Medical Attendant has prerequisites"). Approve, waitlist or reject
    them, one at a time or in bulk (rejection needs a reason the student sees). The latest
    applications are at the top.
 3. **Batches → Run allocation**: preview the automatic allocation (by preference rank, then the

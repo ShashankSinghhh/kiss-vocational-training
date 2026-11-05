@@ -69,7 +69,7 @@ async function rawMaterial(request: APIRequestContext) {
   await ok(
     request.post('/api/v1/admin/users', {
       ...h,
-      data: { role: 'STUDENT', ...student, cgpa: 8.2 },
+      data: { role: 'STUDENT', ...student },
     }),
   );
   return { cycle, course, batch, student };

@@ -80,7 +80,6 @@ describe('admin user management', () => {
       fullName: 'New Student',
       password: 'Initial-Pass-9',
       rollNo: `R-${s}`,
-      cgpa: 7.25,
     };
     const res = await request(app).post('/api/v1/admin/users').set(bearer(accessToken)).send(body);
     expect(res.status).toBe(201);
@@ -110,7 +109,7 @@ describe('admin user management', () => {
   it('returns 409 for a duplicate email or roll number', async () => {
     const { accessToken } = await signedIn(Role.ADMIN);
     const existing = await createLoginUser(prisma(), Role.STUDENT);
-    const base = { role: 'STUDENT', fullName: 'Dup', password: 'Password-123', cgpa: 6 };
+    const base = { role: 'STUDENT', fullName: 'Dup', password: 'Password-123' };
 
     const dupEmail = await request(app)
       .post('/api/v1/admin/users')
@@ -268,7 +267,6 @@ describe('admin user clean-up (BRQ-2.5)', () => {
         fullName: 'Created By Mistake',
         password: 'Mistake-Pass-1',
         rollNo: `M-${uid()}`,
-        cgpa: 7,
       });
     expect(created.status).toBe(201);
     const id = created.body.id as string;
@@ -413,7 +411,6 @@ describe('password set by an admin must be changed (A3, BR-27) and unlocking (A2
         fullName: 'First Timer',
         password: 'Office-Gave-1',
         rollNo: `F-${uid()}`,
-        cgpa: 7,
         mustChangePassword: true,
       });
     expect(created.status).toBe(201);

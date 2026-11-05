@@ -67,7 +67,7 @@ wins for business rules.
 >   Course.prerequisites_need_review (Section 6.1). Batch.status CLOSED
 >   and Enrollment.status WITHDRAWN existed but were never set; they are
 >   now (Section 8.4).
-> - **Settings:** enrollment.autoApprove, enrollment.autoApproveMinCgpa
+> - **Settings:** enrollment.autoApprove, enrollment.autoApproveManualIfPrerequisites
 >   and enrollment.autoApproveManualIfPrerequisites (automatic approval).
 > - **Security:** the global rate limit counts signed-in users one by one
 >   instead of per address; admin-set passwords must be changed before
@@ -784,7 +784,7 @@ transaction and ends with an audit entry.
 ### 8.5 Automatic approval (F3, Amendment 2)
 
 1.  On submit or edit, the enrollments service screens the application
-    with the pure rule screen() against Settings: minimum CGPA, the
+    with the pure rule screen() against Settings: the
     course's prerequisites_need_review flag and BR-23 (no overlapping
     training).
 

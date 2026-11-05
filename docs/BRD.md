@@ -676,9 +676,8 @@ Six requirements added after release; each extends a core feature and is cited b
 
   BRQ-3.5        F3 Enrollment  Applications      Should         BR-01, BR-23
                                 meeting admin-set
-                                rules (minimum
-                                CGPA,
-                                prerequisite
+                                rules
+                                (prerequisite
                                 review per
                                 course) are
                                 approved
@@ -1198,8 +1197,9 @@ below is a configurable setting, not hard-coded.
                                       waitlisted
 
   BR-04                               Allocation honours preference rank
-                                      first, then the priority rule
-                                      (submission time or CGPA)
+                                      first, then submission time;
+                                      academic marks are never used
+                                      (amended 2026-11-05)
 
   BR-05                               Trainers act only on batches
                                       assigned to them

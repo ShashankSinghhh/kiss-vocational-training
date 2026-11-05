@@ -73,7 +73,6 @@
     "clearSelection": "Clear selection",
     "columns": {
       "student": "Student",
-      "cgpa": "CGPA",
       "preferences": "Preferences",
       "submitted": "Submitted",
       "status": "Status",
@@ -114,9 +113,6 @@
       "off": "Off",
       "intro": "When this is on, every application that meets the rules below is approved the moment a student submits it, and the student is told at once. Applications that don’t meet them wait here for you, with the reason.",
       "enabled": "Approve applications automatically",
-      "minCgpa": "Minimum CGPA",
-      "minCgpaHint": "0 means no minimum.",
-      "minInvalid": "Enter a number from 0 to 10",
       "manualIfPrerequisites": "Courses with prerequisites need my review (the system can’t check them)",
       "save": "Save rules",
       "saved": "Automatic approval rules saved",
@@ -130,7 +126,6 @@
       "ran_other": "{{count}} applications approved · {{pending}} still need review"
     },
     "needsReview": {
-      "cgpa": "Needs review: CGPA {{cgpa}} is below {{min}}",
       "prerequisites": "Needs review: {{course}} has prerequisites"
     }
   }

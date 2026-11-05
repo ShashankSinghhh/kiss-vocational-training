@@ -212,7 +212,6 @@ export async function createUser(actor: Actor, input: AdminCreateUserInput): Pro
                 student: {
                   create: {
                     rollNo: input.rollNo,
-                    cgpa: new Prisma.Decimal(input.cgpa),
                     phone: input.phone ?? null,
                   },
                 },
@@ -557,7 +556,7 @@ export async function importStudents(
   if (table.length < 2 || missing.length) {
     throw AppError.unprocessable(
       'IMPORT_BAD_HEADER',
-      'The first line must name the columns email, fullName, rollNo and cgpa (phone optional)',
+      'The first line must name the columns email, fullName and rollNo (phone optional)',
       missing.map((f) => ({ path: f, message: 'missing column' })),
     );
   }
@@ -575,7 +574,6 @@ export async function importStudents(
       email: cell('email').toLowerCase(),
       fullName: cell('fullName'),
       rollNo: cell('rollNo'),
-      cgpa: cell('cgpa'),
       phone: cell('phone'),
     };
     const parsed = StudentImportRowSchema.safeParse({ ...raw, phone: raw.phone || undefined });
@@ -641,7 +639,6 @@ export async function importStudents(
           data: rows.map((r) => ({
             userId: idOf.get(r.email)!,
             rollNo: r.rollNo,
-            cgpa: new Prisma.Decimal(Number(r.cgpa)),
             phone: r.phone || null,
           })),
         });
@@ -655,7 +652,6 @@ export async function importStudents(
               email: r.email,
               fullName: r.fullName,
               rollNo: r.rollNo,
-              cgpa: r.cgpa,
               by: 'CSV_IMPORT',
             },
           })),

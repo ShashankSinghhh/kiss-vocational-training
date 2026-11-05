@@ -102,7 +102,6 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
     data: students.map((s) => ({
       userId: userIdByEmail.get(s.email)!,
       rollNo: s.rollNo,
-      cgpa: s.cgpa,
       phone: s.phone,
     })),
     skipDuplicates: true,

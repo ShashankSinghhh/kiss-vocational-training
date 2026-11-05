@@ -14,9 +14,9 @@ describe('parseCsv (A5)', () => {
 describe('importColumns (A5)', () => {
   it('accepts common column names in any case and order, and lists missing ones', () => {
     expect(importColumns(['Roll No', 'Name', 'E-mail', 'CGPA', 'Mobile'])).toEqual({
-      columns: { rollNo: 0, fullName: 1, email: 2, cgpa: 3, phone: 4 },
+      columns: { rollNo: 0, fullName: 1, email: 2, phone: 4 },
       missing: [],
     });
-    expect(importColumns(['email', 'name']).missing).toEqual(['rollNo', 'cgpa']);
+    expect(importColumns(['email', 'name']).missing).toEqual(['rollNo']);
   });
 });

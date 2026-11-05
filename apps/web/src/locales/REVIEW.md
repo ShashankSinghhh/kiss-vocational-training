@@ -11,7 +11,7 @@ Please review them before the portal is used with students and families.
   (`student.*`), `opportunities.json` (`mine.*`) and `notifications.json`.
 - **Words people actually use** at KISS: e.g. "batch", "trainer", "certificate", "passport".
   English loan words are used on purpose where they are the everyday word (ID, PDF, CSV, QR,
-  CGPA, email); change them if a local word is clearer.
+  email); change them if a local word is clearer.
 - **Placeholders** like `{{name}}` must stay exactly as they are; you may move them within the
   sentence. `pnpm --filter @vtmp/web i18n:check` fails if one is lost or renamed.
 - **Plurals**: keys ending in `_one` / `_other` are singular and plural forms.

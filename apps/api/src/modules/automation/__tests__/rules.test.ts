@@ -34,34 +34,22 @@ describe('analyticsStale (A8)', () => {
 });
 
 describe('waitlistOrder (A2, BR-04)', () => {
-  const c = (
-    id: string,
-    rank: number,
-    submittedAt: string,
-    cgpa = '7.00',
-    status = 'WAITLISTED',
-  ) => ({
+  const c = (id: string, rank: number, submittedAt: string, status = 'WAITLISTED') => ({
     enrollmentId: id,
     status,
     submittedAt,
-    cgpa,
     rankForCourse: rank,
   });
   it('waitlisted only, the course ranked higher first, then the priority rule', () => {
     const list = [
       c('second-choice-early', 2, '2027-01-01T00:00:00Z'),
       c('first-choice-late', 1, '2027-01-05T00:00:00Z'),
-      c('first-choice-early', 1, '2027-01-02T00:00:00Z', '6.00'),
-      c('approved', 1, '2027-01-01T00:00:00Z', '9.00', 'APPROVED'),
+      c('first-choice-early', 1, '2027-01-02T00:00:00Z'),
+      c('approved', 1, '2027-01-01T00:00:00Z', 'APPROVED'),
     ];
     expect(waitlistOrder(list, 'SUBMISSION_TIME')).toEqual([
       'first-choice-early',
       'first-choice-late',
-      'second-choice-early',
-    ]);
-    expect(waitlistOrder(list, 'CGPA')).toEqual([
-      'first-choice-late',
-      'first-choice-early',
       'second-choice-early',
     ]);
   });

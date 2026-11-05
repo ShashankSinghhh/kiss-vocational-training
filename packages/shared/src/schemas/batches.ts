@@ -70,7 +70,6 @@ export interface RosterEntry {
   fullName: string;
   email: string;
   phone: string | null;
-  cgpa: string;
   enrollmentStatus: string;
   allocatedAt: string;
 }
@@ -94,7 +93,6 @@ export interface Candidate {
   status: string;
   rollNo: string;
   fullName: string;
-  cgpa: string;
   submittedAt: string;
   /** Rank of this batch's course in the student's preferences. */
   rankForCourse: number;

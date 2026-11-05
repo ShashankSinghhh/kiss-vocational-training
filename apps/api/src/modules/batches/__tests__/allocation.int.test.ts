@@ -178,7 +178,6 @@ describe('allocation preview → confirm (BRQ-4.2, BR-03, BR-04)', () => {
       prisma(),
       cycle.id,
       Array.from({ length: 500 }, (_, i) => [c[i % 3]!, c[(i + 1) % 3]!, c[(i + 2) % 3]!]),
-      { cgpa: (i) => 5 + (i % 50) / 10 },
     );
 
     const started = Date.now();

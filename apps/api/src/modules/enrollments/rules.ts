@@ -36,21 +36,16 @@ export function isEditable(status: EnrollmentStatus, allWindowsOpen: boolean): b
 
 /**
  * BRQ-3.3 / BRQ-3.5 automatic approval: the reasons an application must wait for a person, in the
- * admin's rules (Settings). No reasons means it is approved automatically. CGPA is compared to
- * two decimals, so 6.00 meets a minimum of 6.
+ * admin's rules (Settings). No reasons means it is approved automatically. Academic marks are
+ * never a reason: vocational training is open to every student.
  */
 export function screen(
   application: {
-    cgpa: number;
     courses: ReadonlyArray<{ title: string; prerequisites: string | null }>;
   },
-  rules: { minCgpa: number; manualIfPrerequisites: boolean },
+  rules: { manualIfPrerequisites: boolean },
 ): ScreeningReason[] {
   const reasons: ScreeningReason[] = [];
-  const cgpa = Math.round(application.cgpa * 100) / 100;
-  if (rules.minCgpa > 0 && cgpa < rules.minCgpa) {
-    reasons.push({ code: 'CGPA_BELOW_MIN', cgpa, min: rules.minCgpa });
-  }
   if (rules.manualIfPrerequisites) {
     for (const c of application.courses) {
       const prerequisites = c.prerequisites?.trim();

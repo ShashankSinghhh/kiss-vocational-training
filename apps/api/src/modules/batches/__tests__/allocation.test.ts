@@ -1,11 +1,10 @@
 import { allocate, type Applicant, type BatchSlot } from '../rules';
 
 const t0 = new Date('2026-11-01T09:00:00Z').getTime();
-const app = (id: string, prefs: string[], minute: number, cgpa = 7): Applicant => ({
+const app = (id: string, prefs: string[], minute: number): Applicant => ({
   enrollmentId: id,
   preferences: prefs,
   submittedAt: new Date(t0 + minute * 60_000),
-  cgpa,
 });
 const batch = (batchId: string, courseId: string, free: number, name = batchId): BatchSlot => ({
   batchId,
@@ -57,30 +56,24 @@ describe('allocate (BRQ-4.2, BR-03, BR-04)', () => {
 
   it('SUBMISSION_TIME: earliest application wins the last seat', () => {
     const r = allocate(
-      [app('late', ['ELEC'], 10, 9.9), app('early', ['ELEC'], 1, 5.0)],
+      [app('late', ['ELEC'], 10), app('early', ['ELEC'], 1)],
       [batch('E1', 'ELEC', 1)],
       'SUBMISSION_TIME',
     );
     expect(r.assignments.map((x) => x.enrollmentId)).toEqual(['early']);
   });
 
-  it('CGPA: highest CGPA wins; equal CGPA falls back to submission time', () => {
-    const r = allocate(
-      [
-        app('early-low', ['ELEC'], 1, 6.0),
-        app('late-high', ['ELEC'], 9, 9.1),
-        app('mid-high', ['ELEC'], 5, 9.1),
-      ],
-      [batch('E1', 'ELEC', 2)],
-      'CGPA',
-    );
-    expect(r.assignments.map((x) => x.enrollmentId)).toEqual(['mid-high', 'late-high']);
-    expect(r.waitlist).toEqual(['early-low']);
-  });
-
   it('breaks complete ties by enrollment id, so results are deterministic', () => {
-    const r1 = allocate([app('b', ['E'], 1), app('a', ['E'], 1)], [batch('E1', 'E', 1)], 'CGPA');
-    const r2 = allocate([app('a', ['E'], 1), app('b', ['E'], 1)], [batch('E1', 'E', 1)], 'CGPA');
+    const r1 = allocate(
+      [app('b', ['E'], 1), app('a', ['E'], 1)],
+      [batch('E1', 'E', 1)],
+      'SUBMISSION_TIME',
+    );
+    const r2 = allocate(
+      [app('a', ['E'], 1), app('b', ['E'], 1)],
+      [batch('E1', 'E', 1)],
+      'SUBMISSION_TIME',
+    );
     expect(r1.assignments[0]!.enrollmentId).toBe('a');
     expect(r2).toEqual(r1);
   });
@@ -112,16 +105,11 @@ describe('allocate (BRQ-4.2, BR-03, BR-04)', () => {
   it('allocates 500 applicants across 3 courses in well under 5 s (BO-3)', () => {
     const courses = ['ELEC', 'SOLAR', 'TAIL'];
     const apps = Array.from({ length: 500 }, (_, i) =>
-      app(
-        `e${i}`,
-        [courses[i % 3]!, courses[(i + 1) % 3]!, courses[(i + 2) % 3]!],
-        i,
-        5 + (i % 50) / 10,
-      ),
+      app(`e${i}`, [courses[i % 3]!, courses[(i + 1) % 3]!, courses[(i + 2) % 3]!], i),
     );
     const batches = courses.flatMap((c) => [batch(`${c}-1`, c, 60), batch(`${c}-2`, c, 60)]);
     const started = performance.now();
-    const r = allocate(apps, batches, 'CGPA');
+    const r = allocate(apps, batches, 'SUBMISSION_TIME');
     const ms = performance.now() - started;
     expect(ms).toBeLessThan(5000);
     expect(r.stats.allocated).toBe(360);

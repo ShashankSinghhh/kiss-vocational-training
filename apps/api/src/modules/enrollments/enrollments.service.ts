@@ -152,12 +152,10 @@ const duplicate = () =>
 export async function autoApproval(): Promise<AutoApproval> {
   const s = await settings.getMany([
     'enrollment.autoApprove',
-    'enrollment.autoApproveMinCgpa',
     'enrollment.autoApproveManualIfPrerequisites',
   ]);
   return {
     enabled: s['enrollment.autoApprove'],
-    minCgpa: s['enrollment.autoApproveMinCgpa'],
     manualIfPrerequisites: s['enrollment.autoApproveManualIfPrerequisites'],
   };
 }
@@ -167,9 +165,6 @@ export async function setAutoApproval(actor: Actor, input: AutoApproval): Promis
   const before = await autoApproval();
   if (before.enabled !== input.enabled) {
     await settings.set(actor, 'enrollment.autoApprove', input.enabled);
-  }
-  if (before.minCgpa !== input.minCgpa) {
-    await settings.set(actor, 'enrollment.autoApproveMinCgpa', input.minCgpa);
   }
   if (before.manualIfPrerequisites !== input.manualIfPrerequisites) {
     await settings.set(
@@ -181,7 +176,6 @@ export async function setAutoApproval(actor: Actor, input: AutoApproval): Promis
   // A7: new or loosened rules apply at once to what is already waiting, not only to new forms.
   const changed =
     before.enabled !== input.enabled ||
-    before.minCgpa !== input.minCgpa ||
     before.manualIfPrerequisites !== input.manualIfPrerequisites;
   if (input.enabled && changed) await runAutoApprovalEverywhere(actor);
   return autoApproval();
@@ -231,10 +225,10 @@ async function approveIfEligible(
   tx: Tx,
   log: AuditFn,
   row: EnrollmentRow,
-  facts: { cgpa: number; userId: string; rules: AutoApproval },
+  facts: { userId: string; rules: AutoApproval },
 ): Promise<EnrollmentRow> {
   if (!facts.rules.enabled) return row;
-  if (screen({ cgpa: facts.cgpa, courses: coursesOf(row) }, facts.rules).length > 0) return row;
+  if (screen({ courses: coursesOf(row) }, facts.rules).length > 0) return row;
   const changed = await tx.enrollment.updateMany({
     where: { id: row.id, status: 'PENDING' },
     data: { status: 'APPROVED', reason: null, decidedAt: new Date(), decidedById: null },
@@ -265,10 +259,10 @@ async function applicantFacts(studentId: string) {
     autoApproval(),
     prisma().student.findUniqueOrThrow({
       where: { id: studentId },
-      select: { cgpa: true, userId: true },
+      select: { userId: true },
     }),
   ]);
-  return { rules, cgpa: Number(student.cgpa), userId: student.userId };
+  return { rules, userId: student.userId };
 }
 
 /**
@@ -284,7 +278,7 @@ export async function runAutoApproval(
   const rules = await autoApproval();
   const pending = await prisma().enrollment.findMany({
     where: { cycleId, status: 'PENDING' },
-    include: { ...enrollmentInclude, student: { select: { cgpa: true, userId: true } } },
+    include: { ...enrollmentInclude, student: { select: { userId: true } } },
   });
   // Students accepted for an overlapping training wait for a person (approving them is refused).
   const clashes = await overlappingTraining(
@@ -293,9 +287,7 @@ export async function runAutoApproval(
     cycle,
   );
   const eligible = pending.filter(
-    (e) =>
-      !clashes.has(e.studentId) &&
-      screen({ cgpa: Number(e.student.cgpa), courses: coursesOf(e) }, rules).length === 0,
+    (e) => !clashes.has(e.studentId) && screen({ courses: coursesOf(e) }, rules).length === 0,
   );
   if (eligible.length === 0) return { approved: 0, stillPending: pending.length };
 
@@ -545,7 +537,6 @@ export async function adminList(
       select: {
         id: true,
         rollNo: true,
-        cgpa: true,
         user: { select: { fullName: true, email: true } },
       },
     },
@@ -568,15 +559,12 @@ export async function adminList(
       ...toDto(e, now),
       // While automatic approval is on: why this one waits for a person.
       needsReview:
-        rules.enabled && e.status === 'PENDING'
-          ? screen({ cgpa: Number(e.student.cgpa), courses: coursesOf(e) }, rules)
-          : null,
+        rules.enabled && e.status === 'PENDING' ? screen({ courses: coursesOf(e) }, rules) : null,
       student: {
         id: e.student.id,
         rollNo: e.student.rollNo,
         fullName: e.student.user.fullName,
         email: e.student.user.email,
-        cgpa: e.student.cgpa.toFixed(2),
       },
     })),
     total,
@@ -726,7 +714,6 @@ export interface AllocationApplicant {
   userId: string;
   rollNo: string;
   fullName: string;
-  cgpa: number;
   submittedAt: Date;
   updatedAt: Date;
   /** Course ids in rank order. */
@@ -746,7 +733,6 @@ export async function approvedApplicants(cycleId: string): Promise<AllocationApp
         select: {
           id: true,
           rollNo: true,
-          cgpa: true,
           user: { select: { id: true, fullName: true } },
         },
       },
@@ -758,7 +744,6 @@ export async function approvedApplicants(cycleId: string): Promise<AllocationApp
     userId: r.student.user.id,
     rollNo: r.student.rollNo,
     fullName: r.student.user.fullName,
-    cgpa: Number(r.student.cgpa),
     submittedAt: r.submittedAt,
     updatedAt: r.updatedAt,
     preferences: r.preferences.map((p) => p.courseId),
@@ -837,7 +822,7 @@ export async function candidatesForCourse(cycleId: string, courseId: string) {
       status: true,
       submittedAt: true,
       preferences: { select: { courseId: true, rank: true } },
-      student: { select: { rollNo: true, cgpa: true, user: { select: { fullName: true } } } },
+      student: { select: { rollNo: true, user: { select: { fullName: true } } } },
     },
   });
   return rows.map((r) => ({
@@ -845,7 +830,6 @@ export async function candidatesForCourse(cycleId: string, courseId: string) {
     status: r.status,
     rollNo: r.student.rollNo,
     fullName: r.student.user.fullName,
-    cgpa: r.student.cgpa.toFixed(2),
     submittedAt: r.submittedAt.toISOString(),
     rankForCourse: r.preferences.find((p) => p.courseId === courseId)?.rank ?? 0,
   }));

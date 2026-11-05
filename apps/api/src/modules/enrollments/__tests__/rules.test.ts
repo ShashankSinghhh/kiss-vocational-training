@@ -77,33 +77,21 @@ describe('isEditable', () => {
 describe('automatic approval screening (BRQ-3.3, BRQ-3.5)', () => {
   const plain = { title: 'Tailoring', prerequisites: null };
   const withPre = { title: 'Electrician', prerequisites: 'Class 10 maths' };
-  const rules = { minCgpa: 6, manualIfPrerequisites: true };
+  const rules = { manualIfPrerequisites: true };
 
   it('passes an application that meets every rule', () => {
-    expect(screen({ cgpa: 7.5, courses: [plain] }, rules)).toEqual([]);
-  });
-  it('compares CGPA at two decimals: 6.00 meets 6, 5.99 does not', () => {
-    expect(screen({ cgpa: 6, courses: [plain] }, rules)).toEqual([]);
-    expect(screen({ cgpa: 5.999, courses: [plain] }, rules)).toEqual([]);
-    expect(screen({ cgpa: 5.99, courses: [plain] }, rules)).toEqual([
-      { code: 'CGPA_BELOW_MIN', cgpa: 5.99, min: 6 },
-    ]);
-  });
-  it('a minimum of 0 means no CGPA rule', () => {
-    expect(screen({ cgpa: 0, courses: [plain] }, { ...rules, minCgpa: 0 })).toEqual([]);
+    expect(screen({ courses: [plain] }, rules)).toEqual([]);
   });
   it('holds courses with prerequisites for a person, unless that rule is off', () => {
-    expect(screen({ cgpa: 8, courses: [plain, withPre] }, rules)).toEqual([
+    expect(screen({ courses: [plain, withPre] }, rules)).toEqual([
       { code: 'HAS_PREREQUISITES', course: 'Electrician', prerequisites: 'Class 10 maths' },
     ]);
-    expect(screen({ cgpa: 8, courses: [{ title: 'X', prerequisites: '  ' }] }, rules)).toEqual([]);
-    expect(
-      screen({ cgpa: 8, courses: [withPre] }, { ...rules, manualIfPrerequisites: false }),
-    ).toEqual([]);
+    expect(screen({ courses: [{ title: 'X', prerequisites: '  ' }] }, rules)).toEqual([]);
+    expect(screen({ courses: [withPre] }, { ...rules, manualIfPrerequisites: false })).toEqual([]);
   });
-  it('lists every reason at once', () => {
-    expect(screen({ cgpa: 5, courses: [withPre] }, rules).map((r) => r.code)).toEqual([
-      'CGPA_BELOW_MIN',
+  it('lists one reason per course with prerequisites', () => {
+    expect(screen({ courses: [withPre, withPre] }, rules).map((r) => r.code)).toEqual([
+      'HAS_PREREQUISITES',
       'HAS_PREREQUISITES',
     ]);
   });

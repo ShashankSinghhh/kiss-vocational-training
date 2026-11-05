@@ -5,7 +5,6 @@ export interface Applicant {
   /** Course ids in preference order; index 0 = rank 1. */
   preferences: readonly string[];
   submittedAt: Date;
-  cgpa: number;
 }
 
 export interface BatchSlot {
@@ -28,13 +27,12 @@ export interface AllocationResult {
 }
 
 /**
- * Priority order within a preference rank (BR-04): earliest submission first, or highest CGPA
- * first with earliest submission breaking ties. The enrollment id makes the order total, so
- * the same input always yields the same allocation.
+ * Priority order within a preference rank (BR-04): earliest submission first. Academic marks
+ * are never used, so every student has the same chance. The enrollment id makes the order total,
+ * so the same input always yields the same allocation.
  */
-export function compareByPriority(rule: AllocationPriorityRule) {
+export function compareByPriority(_rule: AllocationPriorityRule) {
   return (a: Applicant, b: Applicant): number => {
-    if (rule === 'CGPA' && a.cgpa !== b.cgpa) return b.cgpa - a.cgpa;
     const t = a.submittedAt.getTime() - b.submittedAt.getTime();
     if (t !== 0) return t;
     return a.enrollmentId < b.enrollmentId ? -1 : a.enrollmentId > b.enrollmentId ? 1 : 0;
@@ -210,7 +208,6 @@ export interface WaitlistCandidate {
   enrollmentId: string;
   status: string;
   submittedAt: string;
-  cgpa: string;
   /** Rank of the batch's course in the applicant's preferences (1 = first choice). */
   rankForCourse: number;
 }
@@ -233,7 +230,6 @@ export function waitlistOrder(
         enrollmentId: c.enrollmentId,
         preferences: [],
         submittedAt: new Date(c.submittedAt),
-        cgpa: Number(c.cgpa),
       },
     }))
     .sort((a, b) => a.rank - b.rank || priority(a.applicant, b.applicant))

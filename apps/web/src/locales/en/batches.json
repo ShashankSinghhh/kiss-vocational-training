@@ -81,7 +81,6 @@
     "name": "Name",
     "email": "Email",
     "phone": "Phone",
-    "cgpa": "CGPA",
     "status": "Application status",
     "add": "Place a student",
     "candidates": "Approved and waitlisted applicants for this course",
@@ -178,8 +177,7 @@
     "expires": "Preview expires {{when}}",
     "priorityRule": "Priority rule: {{rule}}",
     "rules": {
-      "SUBMISSION_TIME": "earliest application first",
-      "CGPA": "highest CGPA first (then earliest application)"
+      "SUBMISSION_TIME": "earliest application first"
     },
     "stats": {
       "applicants": "Approved applicants",

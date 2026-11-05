@@ -69,7 +69,7 @@ async function setup(request: APIRequestContext) {
     };
     const created = await request.post('/api/v1/admin/users', {
       ...h,
-      data: { role: 'STUDENT', ...student, rollNo: `AL-${s}-${i}`, cgpa: 7 + i / 10 },
+      data: { role: 'STUDENT', ...student, rollNo: `AL-${s}-${i}` },
     });
     expect(created.status()).toBe(201);
     const auth = await token(request, student.email, student.password);

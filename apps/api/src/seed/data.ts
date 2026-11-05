@@ -443,21 +443,11 @@ export const STUDENT_NAMES = [
   'Kaustubh Bhoi',
 ] as const;
 
-/** Small linear congruential generator: same sequence on every run. */
-function lcg(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 1664525 + 1013904223) % 2 ** 32;
-    return s / 2 ** 32;
-  };
-}
-
 export interface SeedStudent {
   n: number;
   email: string;
   fullName: string;
   rollNo: string;
-  cgpa: string;
   phone: string;
 }
 
@@ -465,17 +455,13 @@ export function makeStudents(count: number = STUDENT_NAMES.length): SeedStudent[
   if (count > STUDENT_NAMES.length) {
     throw new Error(`At most ${STUDENT_NAMES.length} seed students have names`);
   }
-  const rand = lcg(2026);
   return Array.from({ length: count }, (_, i) => {
     const n = i + 1;
-    // CGPA spread 5.00–9.80 so the CGPA priority rule has something to sort.
-    const cgpa = (5 + Math.round(rand() * 480) / 100).toFixed(2);
     return {
       n,
       email: `student${String(n).padStart(3, '0')}@${EMAIL_DOMAIN}`,
       fullName: STUDENT_NAMES[i]!,
       rollNo: `KISS-VT-${String(n).padStart(4, '0')}`,
-      cgpa,
       phone: `9${String(437000000 + n * 7919).padStart(9, '0')}`,
     };
   });

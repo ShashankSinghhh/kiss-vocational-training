@@ -131,7 +131,7 @@
     "WINDOW_AFTER_CYCLE": "Applications must close by the end of the training cycle.",
     "CYCLE_HAS_BATCHES_OUTSIDE": "Some batches would run outside the new dates. Change their dates first.",
     "CYCLE_HAS_WINDOWS_OUTSIDE": "Some application windows would close after the new end date. Change them first.",
-    "IMPORT_BAD_HEADER": "The file's first line must name the columns email, fullName, rollNo and cgpa.",
+    "IMPORT_BAD_HEADER": "The file's first line must name the columns email, fullName and rollNo.",
     "IMPORT_TOO_MANY_ROWS": "Import at most 500 students at a time.",
     "PROGRAMME_NAME_TAKEN": "A programme with this name already exists.",
     "PROGRAMME_NOT_FOUND": "Choose an existing programme."

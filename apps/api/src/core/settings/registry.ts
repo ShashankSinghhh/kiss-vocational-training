@@ -49,7 +49,7 @@ export const SETTINGS = {
   'allocation.priorityRule': define(
     AllocationPriorityRuleSchema,
     'SUBMISSION_TIME',
-    'Tie-break within a preference rank: earliest submission or highest CGPA [BR-04]',
+    'Tie-break within a preference rank: earliest submission (academic marks are never used) [BR-04]',
   ),
   'allocation.previewTtlMinutes': define(
     positiveInt,
@@ -150,11 +150,6 @@ export const SETTINGS = {
     z.boolean(),
     false,
     'Approve applications that pass the rules below as soon as they are submitted [BRQ-3.3]',
-  ),
-  'enrollment.autoApproveMinCgpa': define(
-    z.number().min(0).max(10),
-    0,
-    'Lowest CGPA approved automatically; 0 = no minimum [BRQ-3.3]',
   ),
   'enrollment.autoApproveManualIfPrerequisites': define(
     z.boolean(),

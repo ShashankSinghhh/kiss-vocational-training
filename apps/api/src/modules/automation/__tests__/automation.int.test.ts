@@ -166,7 +166,7 @@ describe('A7: automatic approval re-runs when its rules change (BRQ-3.5, BRQ-3.6
       await request(app)
         .put('/api/v1/admin/enrollments/auto-approval')
         .set(A)
-        .send({ enabled: true, minCgpa: 0, manualIfPrerequisites: true })
+        .send({ enabled: true, manualIfPrerequisites: true })
         .expect(200);
       expect((await db.enrollment.findUniqueOrThrow({ where: { id: e! } })).status).toBe(
         'APPROVED',
@@ -175,7 +175,7 @@ describe('A7: automatic approval re-runs when its rules change (BRQ-3.5, BRQ-3.6
       await request(app)
         .put('/api/v1/admin/enrollments/auto-approval')
         .set(A)
-        .send({ enabled: false, minCgpa: 0, manualIfPrerequisites: true });
+        .send({ enabled: false, manualIfPrerequisites: true });
     }
   });
 });

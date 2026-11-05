@@ -84,7 +84,6 @@ test.describe('admin user management', () => {
     await dialog.getByLabel('Email').fill(email);
     await dialog.getByLabel('Initial password').fill('E2e-Start-Pass1');
     await dialog.getByLabel('Roll number').fill(`E2E-${suffix}`);
-    await dialog.getByLabel('CGPA').fill('7.4');
     await dialog.getByRole('button', { name: 'Create account' }).click();
     await expect(
       page.getByRole('status').filter({ hasText: 'E2E Student was added' }),
@@ -135,7 +134,6 @@ test.describe('admin user management', () => {
     await dialog.getByLabel('Email').fill(email);
     await dialog.getByLabel('Initial password').fill('E2e-Start-Pass1');
     await dialog.getByLabel('Roll number').fill(`FGT-${suffix}`);
-    await dialog.getByLabel('CGPA').fill('7.1');
     await dialog.getByRole('button', { name: 'Create account' }).click();
     await expect(dialog).toBeHidden();
 
@@ -171,7 +169,6 @@ test.describe('admin user management', () => {
     await dialog.getByLabel('Email').fill(email);
     await dialog.getByLabel('Initial password').fill('E2e-Start-Pass1');
     await dialog.getByLabel('Roll number').fill(`DEL-${suffix}`);
-    await dialog.getByLabel('CGPA').fill('6.5');
     await dialog.getByRole('button', { name: 'Create account' }).click();
     await expect(dialog).toBeHidden();
 

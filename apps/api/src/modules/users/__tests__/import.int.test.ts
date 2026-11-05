@@ -24,11 +24,11 @@ describe('student import from CSV (A5, BRQ-1.5)', () => {
     const s = uid();
     const existing = await createLoginUser(prisma(), Role.STUDENT);
     const csv = [
-      'email,fullName,rollNo,cgpa,phone',
-      `ok-${s}@kiss.test,Sumitra Hembram,IMP-${s}-1,7.5,9437000001`,
-      `not-an-email,Rabindra Majhi,IMP-${s}-2,7.1,`,
-      `dup-${s}@kiss.test,Lipika Tudu,IMP-${s}-1,11,`,
-      `${existing.email},Biren Munda,IMP-${s}-4,6.0,`,
+      'email,fullName,rollNo,phone',
+      `ok-${s}@kiss.test,Sumitra Hembram,IMP-${s}-1,9437000001`,
+      `not-an-email,Rabindra Majhi,IMP-${s}-2,`,
+      `dup-${s}@kiss.test,Lipika Tudu,IMP-${s}-1,12345`,
+      `${existing.email},Biren Munda,IMP-${s}-4,`,
     ].join('\n');
     const res = await importCsv(csv, true).expect(200);
     expect(res.body).toMatchObject({ valid: 1, invalid: 3, created: 0 });
@@ -38,7 +38,7 @@ describe('student import from CSV (A5, BRQ-1.5)', () => {
     expect(errs(3)).toEqual([{ field: 'email', code: 'INVALID' }]);
     expect(errs(4)).toEqual(
       expect.arrayContaining([
-        { field: 'cgpa', code: 'INVALID' },
+        { field: 'phone', code: 'INVALID' },
         { field: 'rollNo', code: 'DUPLICATE_IN_FILE' },
       ]),
     );
@@ -49,6 +49,7 @@ describe('student import from CSV (A5, BRQ-1.5)', () => {
   });
 
   it('imports clean rows in one go: students must change the shared password, each audited', async () => {
+    // An old spreadsheet with a CGPA column still imports: the column is ignored.
     const s = uid();
     const csv = [
       'Roll No,Name,Email,CGPA',

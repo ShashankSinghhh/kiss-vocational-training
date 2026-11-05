@@ -95,7 +95,8 @@ export type LearningResourceType = (typeof learningResourceType.values)[number];
 export const LearningResourceTypeSchema = learningResourceType.schema;
 export const LEARNING_RESOURCE_TYPES = learningResourceType.values;
 
-const allocationPriorityRule = defineEnum(['SUBMISSION_TIME', 'CGPA']);
+/** Vocational training is open to everyone: seats go by preference, then by who applied first. */
+const allocationPriorityRule = defineEnum(['SUBMISSION_TIME']);
 export const AllocationPriorityRule = allocationPriorityRule.obj;
 export type AllocationPriorityRule = (typeof allocationPriorityRule.values)[number];
 export const AllocationPriorityRuleSchema = allocationPriorityRule.schema;

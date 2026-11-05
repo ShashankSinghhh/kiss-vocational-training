@@ -59,7 +59,6 @@ erDiagram
     uuid id PK
     uuid user_id FK,UK
     text roll_no UK
-    decimal cgpa "0-10"
     text phone
     text photo_url
   }
@@ -423,7 +422,7 @@ erDiagram
 | BR-19 certificate codes ≥ 12 chars | CHECK `certificates_public_code_length` |
 | Certificates only for passing grades | CHECK `grade <> 'NOT_COMPLETED'` |
 | Revocations carry a reason | CHECKs on certificates and competency_ratings |
-| Ranges | rank 1–3, competency levels 1–4, CGPA 0–10, capacity/duration/max marks/weightage > 0, date and time ordering, due_on ≥ created date |
+| Ranges | rank 1–3, competency levels 1–4, capacity/duration/max marks/weightage > 0, date and time ordering, due_on ≥ created date |
 | Evidence is a file or a link, never both | CHECK `practical_evidence_file_or_link`; files ≤ 10 MB |
 | Job role levels 1–4 | CHECK `job_role_competencies_level_range` |
 | Foreign keys are indexed | Every foreign key has an index starting with its columns (checked by a test) |

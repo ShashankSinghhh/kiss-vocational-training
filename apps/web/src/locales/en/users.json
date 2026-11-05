@@ -77,7 +77,6 @@
     "mustChangePassword": "Ask them to choose their own password at first sign-in",
     "locale": "Preferred language",
     "rollNo": "Roll number",
-    "cgpa": "CGPA",
     "employeeCode": "Employee code",
     "specialization": "Specialization",
     "phone": "Phone (optional)",
@@ -88,7 +87,7 @@
   "import": {
     "open": "Import students",
     "title": "Import students from a CSV file",
-    "body": "The file's first line names the columns: email, fullName, rollNo, cgpa and, if you have it, phone. Up to {{max}} students at a time. Check the file first; nothing is created until every row is right.",
+    "body": "The file's first line names the columns: email, fullName, rollNo and, if you have it, phone. Up to {{max}} students at a time. Check the file first; nothing is created until every row is right.",
     "file": "CSV file",
     "password": "First password for every student",
     "passwordHint": "At least 8 characters with a letter and a digit. Share it privately; each student must choose their own at first sign-in.",
@@ -115,7 +114,6 @@
       "email": "email",
       "fullName": "name",
       "rollNo": "roll number",
-      "cgpa": "CGPA (0–10)",
       "phone": "phone"
     }
   }

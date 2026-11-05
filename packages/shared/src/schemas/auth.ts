@@ -70,7 +70,6 @@ export const MeSchema = z.object({
     .object({
       id: z.string().uuid(),
       rollNo: z.string(),
-      cgpa: z.string(),
       phone: z.string().nullable(),
       nameOdia: z.string().nullable(),
     })
@@ -109,7 +108,6 @@ export const AdminCreateUserSchema = z.discriminatedUnion('role', [
     ...base,
     role: z.literal('STUDENT'),
     rollNo: z.string().trim().min(1).max(40),
-    cgpa: z.coerce.number().min(0).max(10),
     phone: phone.optional(),
   }),
   z.object({
@@ -175,7 +173,7 @@ export type UserSummary = z.infer<typeof UserSummarySchema>;
 
 export const STUDENT_IMPORT_MAX_ROWS = 500;
 
-/** A CSV of students (columns email, fullName, rollNo, cgpa, phone) and their first password. */
+/** A CSV of students (columns email, fullName, rollNo, phone) and their first password. */
 export const StudentImportSchema = z
   .object({
     csv: z.string().min(1).max(200_000),
@@ -192,7 +190,6 @@ export const StudentImportRowSchema = z.object({
   email,
   fullName: z.string().trim().min(2).max(120),
   rollNo: z.string().trim().min(1).max(40),
-  cgpa: z.coerce.number().min(0).max(10),
   phone: phone.optional(),
 });
 
@@ -206,10 +203,9 @@ export interface StudentImportRow {
   email: string;
   fullName: string;
   rollNo: string;
-  cgpa: string;
   phone: string;
   errors: Array<{
-    field: 'email' | 'fullName' | 'rollNo' | 'cgpa' | 'phone';
+    field: 'email' | 'fullName' | 'rollNo' | 'phone';
     code: StudentImportErrorCode;
   }>;
 }

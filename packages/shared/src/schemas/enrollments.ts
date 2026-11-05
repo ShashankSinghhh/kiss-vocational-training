@@ -89,7 +89,7 @@ export interface MyEnrollment extends Enrollment {
 }
 
 export interface AdminEnrollmentRow extends Enrollment {
-  student: { id: string; rollNo: string; fullName: string; email: string; cgpa: string };
+  student: { id: string; rollNo: string; fullName: string; email: string };
   /**
    * Pending, with automatic approval on: why the rules hold it for a person (empty = it
    * passes). Null otherwise.
@@ -100,16 +100,12 @@ export interface AdminEnrollmentRow extends Enrollment {
 // ─── Automatic approval (BRQ-3.3): the admin's rules approve routine applications ──
 
 /** Why an application is held for manual review instead of being approved automatically. */
-export type ScreeningReason =
-  | { code: 'CGPA_BELOW_MIN'; cgpa: number; min: number }
-  | { code: 'HAS_PREREQUISITES'; course: string; prerequisites: string };
+export type ScreeningReason = { code: 'HAS_PREREQUISITES'; course: string; prerequisites: string };
 
 export const AutoApprovalSchema = z
   .object({
     /** Approve applications that pass the rules as soon as they are submitted. */
     enabled: z.boolean(),
-    /** Lowest CGPA approved automatically; 0 = no minimum. */
-    minCgpa: z.number().min(0).max(10),
     /** Applications naming a course with prerequisites wait for a person (they're free text). */
     manualIfPrerequisites: z.boolean(),
   })

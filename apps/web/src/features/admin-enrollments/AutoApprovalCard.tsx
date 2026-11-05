@@ -1,7 +1,7 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AutoApproval } from '@vtmp/shared';
-import { Badge, Button, Card, Input, Modal } from '../../components/ui';
+import { Badge, Button, Card, Modal } from '../../components/ui';
 import { useToast } from '../../components/toast';
 import { useErrorMessage } from '../../lib/api/useErrorMessage';
 import { useAutoApproval, useRunAutoApproval, useSaveAutoApproval } from './api';
@@ -23,33 +23,24 @@ export function AutoApprovalCard({ cycleId, cycleName }: { cycleId?: string; cyc
   const run = useRunAutoApproval();
   const ids = { enabled: useId(), prereq: useId() };
   const [form, setForm] = useState<AutoApproval | null>(null);
-  const [minText, setMinText] = useState('0');
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (current.data) {
       setForm(current.data);
-      setMinText(String(current.data.minCgpa));
     }
   }, [current.data]);
 
   if (!form) return null;
-  const min = Number(minText);
-  const minError =
-    minText.trim() === '' || Number.isNaN(min) || min < 0 || min > 10
-      ? t('admin.auto.minInvalid')
-      : undefined;
   const dirty =
     !!current.data &&
     (form.enabled !== current.data.enabled ||
-      form.manualIfPrerequisites !== current.data.manualIfPrerequisites ||
-      min !== current.data.minCgpa);
+      form.manualIfPrerequisites !== current.data.manualIfPrerequisites);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (minError) return;
     try {
-      await save.mutateAsync({ ...form, minCgpa: min });
+      await save.mutateAsync(form);
       toast.show({ tone: 'success', title: t('admin.auto.saved') });
     } catch (err) {
       toast.show({ tone: 'error', title: errorMessage(err) });
@@ -92,22 +83,7 @@ export function AutoApprovalCard({ cycleId, cycleName }: { cycleId?: string; cyc
           <span className="font-medium">{t('admin.auto.enabled')}</span>
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label={t('admin.auto.minCgpa')}
-            hint={t('admin.auto.minCgpaHint')}
-            type="number"
-            inputMode="decimal"
-            min={0}
-            max={10}
-            step={0.1}
-            value={minText}
-            error={minError}
-            onChange={(e) => setMinText(e.target.value)}
-          />
-          <label
-            htmlFor={ids.prereq}
-            className="flex items-start gap-2 pt-7 text-sm text-slate-900 sm:pt-8"
-          >
+          <label htmlFor={ids.prereq} className="flex items-start gap-2 text-sm text-slate-900">
             <input
               id={ids.prereq}
               type="checkbox"
@@ -119,7 +95,7 @@ export function AutoApprovalCard({ cycleId, cycleName }: { cycleId?: string; cyc
           </label>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" loading={save.isPending} disabled={!dirty || !!minError}>
+          <Button type="submit" loading={save.isPending} disabled={!dirty}>
             {t('admin.auto.save')}
           </Button>
           <Button

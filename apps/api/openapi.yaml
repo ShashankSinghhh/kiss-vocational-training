@@ -300,7 +300,7 @@ paths:
       tags: [admin-users]
       summary: Import students from a CSV (Admin, A5, BRQ-1.5); check with dryRun first
       description: >-
-        Body csv (first line names the columns email, fullName, rollNo, cgpa, optional phone;
+        Body csv (first line names the columns email, fullName, rollNo, optional phone;
         at most 500 rows), password (the shared first password, BR-27) and dryRun. Every row is
         checked (format, duplicates in the file, email or roll number already used) and returned
         with error codes. A dry run, or any row with an error, creates nothing; otherwise every
@@ -787,7 +787,7 @@ paths:
   /admin/enrollments/auto-approval:
     get:
       tags: [admin-enrollments]
-      summary: 'Automatic approval rules (Admin, BRQ-3.3, BRQ-3.5): enabled, minCgpa (0 = none), manualIfPrerequisites'
+      summary: 'Automatic approval rules (Admin, BRQ-3.3, BRQ-3.5): enabled, manualIfPrerequisites'
       responses:
         '200': { description: The rules }
     put:
@@ -800,10 +800,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [enabled, minCgpa, manualIfPrerequisites]
+              required: [enabled, manualIfPrerequisites]
               properties:
                 enabled: { type: boolean }
-                minCgpa: { type: number, minimum: 0, maximum: 10 }
                 manualIfPrerequisites: { type: boolean }
       responses:
         '200': { description: The saved rules }
@@ -2644,7 +2643,6 @@ components:
           properties:
             id: { type: string, format: uuid }
             rollNo: { type: string }
-            cgpa: { type: string, example: '7.50' }
             phone: { type: string, nullable: true }
         trainer:
           nullable: true
@@ -2670,7 +2668,7 @@ components:
     CreateUserRequest:
       type: object
       required: [role, email, fullName, password]
-      description: STUDENT also requires rollNo and cgpa; TRAINER requires employeeCode.
+      description: STUDENT also requires rollNo; TRAINER requires employeeCode.
       properties:
         role: { $ref: '#/components/schemas/Role' }
         email: { type: string, format: email }
@@ -2686,7 +2684,6 @@ components:
           default: false
           description: Ask the user to choose their own password at first sign-in.
         rollNo: { type: string }
-        cgpa: { type: number, minimum: 0, maximum: 10 }
         employeeCode: { type: string }
         specialization: { type: string }
         phone: { type: string }

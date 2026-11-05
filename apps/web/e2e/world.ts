@@ -113,7 +113,7 @@ export async function setupActiveBatch(request: APIRequestContext) {
     await ok(
       request.post('/api/v1/admin/users', {
         ...h,
-        data: { role: 'STUDENT', ...student, rollNo: `TR-${s}-${i}`, cgpa: 8 },
+        data: { role: 'STUDENT', ...student, rollNo: `TR-${s}-${i}` },
       }),
     );
     const auth = await token(request, student.email, student.password);

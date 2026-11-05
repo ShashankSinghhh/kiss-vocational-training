@@ -15,7 +15,6 @@ async function newStudent(request: APIRequestContext) {
     fullName: `Applicant ${s}`,
     password: 'E2e-Apply-Pass1',
     rollNo: `E2E-${s}`.slice(0, 40),
-    cgpa: 7.9,
   };
   const res = await request.post('/api/v1/admin/users', {
     data: student,

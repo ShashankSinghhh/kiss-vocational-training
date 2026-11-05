@@ -390,7 +390,6 @@ function StudentsTab({ batch, admin }: { batch: BatchDetail; admin: boolean }) {
 
   const candidateColumns: Column<Candidate>[] = [
     { key: 'name', header: t('students.name'), render: (c) => `${c.fullName} (${c.rollNo})` },
-    { key: 'cgpa', header: t('students.cgpa'), align: 'right', render: (c) => c.cgpa },
     { key: 'rank', header: t('students.rank'), align: 'right', render: (c) => c.rankForCourse },
     {
       key: 'status',

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Prisma, Role, type PrismaClient } from '@prisma/client';
+import { Role, type PrismaClient } from '@prisma/client';
 
 /** Integration tests share one database, so every fixture gets a unique suffix. */
 export function uid(): string {
@@ -14,7 +14,7 @@ export async function createStudent(db: PrismaClient) {
       fullName: `Test Student ${s}`,
       role: Role.STUDENT,
       passwordHash: 'not-a-real-hash',
-      student: { create: { rollNo: `T-${s}`, cgpa: new Prisma.Decimal('7.50') } },
+      student: { create: { rollNo: `T-${s}` } },
     },
     include: { student: true },
   });
@@ -50,9 +50,7 @@ export async function createLoginUser(
       role,
       isActive: opts.isActive ?? true,
       passwordHash: await hashPassword(TEST_PASSWORD),
-      ...(role === Role.STUDENT
-        ? { student: { create: { rollNo: `T-${s}`, cgpa: new Prisma.Decimal('8.10') } } }
-        : {}),
+      ...(role === Role.STUDENT ? { student: { create: { rollNo: `T-${s}` } } } : {}),
       ...(role === Role.TRAINER ? { trainer: { create: { employeeCode: `E-${s}` } } } : {}),
     },
     include: { student: true, trainer: true },
@@ -136,7 +134,7 @@ export async function createApprovedApplicants(
   db: PrismaClient,
   cycleId: string,
   prefs: string[][],
-  opts: { cgpa?: (i: number) => number; status?: 'APPROVED' | 'WAITLISTED' } = {},
+  opts: { status?: 'APPROVED' | 'WAITLISTED' } = {},
 ) {
   const s = uid();
   const base = Date.now() - prefs.length * 60_000;
@@ -158,7 +156,6 @@ export async function createApprovedApplicants(
     data: emails.map((email, i) => ({
       userId: userId.get(email)!,
       rollNo: `A-${s}-${i}`,
-      cgpa: new Prisma.Decimal((opts.cgpa?.(i) ?? 7).toFixed(2)),
     })),
   });
   const students = await db.student.findMany({

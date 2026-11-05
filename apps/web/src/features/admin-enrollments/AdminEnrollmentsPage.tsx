@@ -132,7 +132,6 @@ export function AdminEnrollmentsPage() {
         </div>
       ),
     },
-    { key: 'cgpa', header: t('admin.columns.cgpa'), align: 'right', render: (r) => r.student.cgpa },
     {
       key: 'prefs',
       header: t('admin.columns.preferences'),
@@ -157,13 +156,8 @@ export function AdminEnrollmentsPage() {
           <StatusBadge status={r.status} />
           {r.reason && <span className="text-xs text-slate-600">{r.reason}</span>}
           {r.needsReview?.map((n) => (
-            <span
-              key={`${n.code}-${n.code === 'HAS_PREREQUISITES' ? n.course : ''}`}
-              className="text-xs text-amber-800"
-            >
-              {n.code === 'CGPA_BELOW_MIN'
-                ? t('admin.needsReview.cgpa', { cgpa: n.cgpa.toFixed(2), min: n.min.toFixed(2) })
-                : t('admin.needsReview.prerequisites', { course: n.course })}
+            <span key={`${n.code}-${n.course}`} className="text-xs text-amber-800">
+              {t('admin.needsReview.prerequisites', { course: n.course })}
             </span>
           ))}
         </div>

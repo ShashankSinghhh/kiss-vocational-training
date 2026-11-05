@@ -464,6 +464,22 @@ audit. Three medium issues are fixed here.
 
 ---
 
+## After Sprint 13 — Open to every student: CGPA removed (2026-11-05)
+
+- **Why:** vocational training should be open to every student whatever their marks; a CGPA
+  minimum or tie-break would favour stronger students and work against the programme's purpose.
+- **Removed:** the `students.cgpa` column (migration `20261105100000_remove_cgpa`), the CGPA
+  field on Add user and in the CSV import (an old file with a CGPA column still imports; the
+  column is ignored), the minimum-CGPA rule of automatic approval and its setting, the CGPA
+  allocation tie-break (seats go by preference rank, then submission time), and the CGPA columns
+  on the enrollment and batch screens. BR-04 and BRQ-3.5 amended in the BRD.
+- **Also added:** `pnpm db:seed --demo-cycle` / `--remove-demo-cycle`: a past "Demo Cycle 2026"
+  replicating the curriculum with a term of history (certificates A–D, not completed, low
+  attendance, withdrawn, revoked and reissued certificates, at-risk students, sessions today, and
+  rejected, waitlisted and pending applications) for demonstrations.
+
+---
+
 ## After Sprint 13 — The portal is named KISS SkillBridge (2026-11-04)
 
 - The team chose **KISS SkillBridge** (from training to work). It replaces "KISS VTMP" in the

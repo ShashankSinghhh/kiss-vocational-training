@@ -21,7 +21,6 @@ interface FormValues {
   password: string;
   locale: Locale;
   rollNo: string;
-  cgpa: string;
   employeeCode: string;
   specialization: string;
   phone: string;
@@ -35,7 +34,6 @@ const EMPTY: FormValues = {
   password: '',
   locale: 'en',
   rollNo: '',
-  cgpa: '',
   employeeCode: '',
   specialization: '',
   phone: '',
@@ -54,7 +52,7 @@ function toPayload(v: FormValues): Record<string, unknown> {
   };
   const optional = (s: string) => (s.trim() ? s : undefined);
   if (v.role === 'STUDENT') {
-    return { ...common, rollNo: v.rollNo, cgpa: v.cgpa, phone: optional(v.phone) };
+    return { ...common, rollNo: v.rollNo, phone: optional(v.phone) };
   }
   if (v.role === 'TRAINER') {
     return {
@@ -197,17 +195,6 @@ export function CreateUserModal({ open, onClose }: { open: boolean; onClose: () 
               required
               error={fieldError('rollNo')}
               {...register('rollNo')}
-            />
-            <Input
-              label={t('form.cgpa')}
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min={0}
-              max={10}
-              required
-              error={fieldError('cgpa')}
-              {...register('cgpa')}
             />
           </>
         )}

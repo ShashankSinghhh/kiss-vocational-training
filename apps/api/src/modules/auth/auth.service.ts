@@ -22,7 +22,7 @@ const meSelect = {
   role: true,
   locale: true,
   mustChangePassword: true,
-  student: { select: { id: true, rollNo: true, cgpa: true, phone: true, nameOdia: true } },
+  student: { select: { id: true, rollNo: true, phone: true, nameOdia: true } },
   trainer: { select: { id: true, employeeCode: true, phone: true, specialization: true } },
 } satisfies Prisma.UserSelect;
 
@@ -36,7 +36,7 @@ export function toMe(u: MeRow): Me {
     role: u.role,
     locale: u.locale,
     mustChangePassword: u.mustChangePassword,
-    student: u.student ? { ...u.student, cgpa: u.student.cgpa.toFixed(2) } : null,
+    student: u.student,
     trainer: u.trainer,
   };
 }

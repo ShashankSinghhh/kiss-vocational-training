@@ -47,7 +47,7 @@ test.describe('Round 2 automation (A1–A9)', () => {
     await dialog.getByLabel('First password for every student').fill('Welcome2026');
 
     // A file with a problem is reported by line, and nothing can be imported.
-    await upload(`email,fullName,rollNo,cgpa\nbad-email,Sabita Minz,IMP-${s}-0,7.2\n`);
+    await upload(`email,fullName,rollNo\nbad-email,Sabita Minz,IMP-${s}-0\n`);
     await dialog.getByRole('button', { name: 'Check file' }).click();
     await expect(
       dialog.getByText('0 rows are ready and 1 have problems.', { exact: false }),
@@ -58,9 +58,9 @@ test.describe('Round 2 automation (A1–A9)', () => {
     // A clean file is checked, then imported.
     await upload(
       [
-        'email,fullName,rollNo,cgpa',
-        `imp-${s}-1@kiss-vtmp.test,Rinki Toppo,IMP-${s}-1,8.1`,
-        `imp-${s}-2@kiss-vtmp.test,Sudam Lakra,IMP-${s}-2,6.4`,
+        'email,fullName,rollNo',
+        `imp-${s}-1@kiss-vtmp.test,Rinki Toppo,IMP-${s}-1`,
+        `imp-${s}-2@kiss-vtmp.test,Sudam Lakra,IMP-${s}-2`,
       ].join('\n'),
     );
     await dialog.getByRole('button', { name: 'Check file' }).click();

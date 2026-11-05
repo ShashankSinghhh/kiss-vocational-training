@@ -443,7 +443,7 @@ describe('automatic approval (BRQ-3.3, BRQ-3.5)', () => {
     request(app)
       .put('/api/v1/admin/enrollments/auto-approval')
       .set(admin.auth)
-      .send({ enabled: true, minCgpa: 0, manualIfPrerequisites: true, ...over });
+      .send({ enabled: true, manualIfPrerequisites: true, ...over });
 
   beforeAll(async () => {
     admin = await signedIn(Role.ADMIN);
@@ -453,8 +453,8 @@ describe('automatic approval (BRQ-3.3, BRQ-3.5)', () => {
 
   it('approves an application that meets every rule the moment it is submitted', async () => {
     const { cycle, courses } = await createOpenCycle(prisma(), 1);
-    const { user, auth } = await signedIn(Role.STUDENT); // CGPA 8.10
-    await rules({ minCgpa: 8 }).expect(200);
+    const { user, auth } = await signedIn(Role.STUDENT);
+    await rules({}).expect(200);
 
     const res = await apply(auth, cycle.id, [courses[0]!.id]);
     expect(res.status).toBe(201);
@@ -478,11 +478,12 @@ describe('automatic approval (BRQ-3.3, BRQ-3.5)', () => {
     });
     const a = await signedIn(Role.STUDENT);
     const b = await signedIn(Role.STUDENT);
-    await rules({ minCgpa: 9 }).expect(200);
+    await rules({}).expect(200);
 
-    const low = await apply(a.auth, cycle.id, [courses[0]!.id]);
+    const plain = await apply(a.auth, cycle.id, [courses[0]!.id]);
     const pre = await apply(b.auth, cycle.id, [courses[1]!.id]);
-    expect([low.body.status, pre.body.status]).toEqual(['PENDING', 'PENDING']);
+    // Academic marks never hold an application: only the course's prerequisites do.
+    expect([plain.body.status, pre.body.status]).toEqual(['APPROVED', 'PENDING']);
 
     const list = await request(app)
       .get('/api/v1/admin/enrollments')
@@ -492,11 +493,8 @@ describe('automatic approval (BRQ-3.3, BRQ-3.5)', () => {
     const byId = new Map(
       (list.body.data as Array<{ id: string; needsReview: unknown }>).map((r) => [r.id, r]),
     );
-    expect(byId.get(low.body.id)!.needsReview).toEqual([
-      { code: 'CGPA_BELOW_MIN', cgpa: 8.1, min: 9 },
-    ]);
+    expect(byId.get(plain.body.id)!.needsReview).toBeNull();
     expect(byId.get(pre.body.id)!.needsReview).toEqual([
-      { code: 'CGPA_BELOW_MIN', cgpa: 8.1, min: 9 },
       {
         code: 'HAS_PREREQUISITES',
         course: courses[1]!.title,
@@ -550,24 +548,26 @@ describe('automatic approval (BRQ-3.3, BRQ-3.5)', () => {
   });
 
   it('the rules are validated, audited and admin-only', async () => {
-    await rules({ minCgpa: 11 }).expect(422);
+    // A minimum CGPA is no longer a rule: the field is refused (vocational training is open to all).
+    await rules({ minCgpa: 6 }).expect(422);
     const student = await signedIn(Role.STUDENT);
     await request(app).get('/api/v1/admin/enrollments/auto-approval').set(student.auth).expect(403);
-    await rules({ minCgpa: 7.5 }).expect(200);
+    await rules({ manualIfPrerequisites: false }).expect(200);
     const now = await request(app)
       .get('/api/v1/admin/enrollments/auto-approval')
       .set(admin.auth)
       .expect(200);
-    expect(now.body).toEqual({ enabled: true, minCgpa: 7.5, manualIfPrerequisites: true });
+    expect(now.body).toEqual({ enabled: true, manualIfPrerequisites: false });
     expect(
       await prisma().auditLog.count({
         where: {
           entity: 'Setting',
-          entityId: 'enrollment.autoApproveMinCgpa',
+          entityId: 'enrollment.autoApproveManualIfPrerequisites',
           userId: admin.user.id,
         },
       }),
     ).toBeGreaterThan(0);
+    await rules({}).expect(200);
   });
 });
 
@@ -601,11 +601,11 @@ describe('overlapping trainings (BR-23)', () => {
 
   it('refuses to approve into an overlapping cycle (bulk rolls back), and the automatic run skips it', async () => {
     const admin = await signedIn(Role.ADMIN);
-    // Rules are shared settings: switch automatic approval off with no CGPA minimum.
+    // Rules are shared settings: switch automatic approval off.
     await request(app)
       .put('/api/v1/admin/enrollments/auto-approval')
       .set(admin.auth)
-      .send({ enabled: false, minCgpa: 0, manualIfPrerequisites: true })
+      .send({ enabled: false, manualIfPrerequisites: true })
       .expect(200);
     const busy = await signedIn(Role.STUDENT);
     const free = await signedIn(Role.STUDENT);
@@ -651,7 +651,7 @@ describe('prerequisites that need no person (D2)', () => {
     const admin = await signedIn(Role.ADMIN);
     const rules = (body: Record<string, unknown>) =>
       request(app).put('/api/v1/admin/enrollments/auto-approval').set(admin.auth).send(body);
-    await rules({ enabled: true, minCgpa: 0, manualIfPrerequisites: true }).expect(200);
+    await rules({ enabled: true, manualIfPrerequisites: true }).expect(200);
     try {
       const { cycle, courses } = await createOpenCycle(prisma(), 2);
       await prisma().course.update({
@@ -674,7 +674,7 @@ describe('prerequisites that need no person (D2)', () => {
         .send({ prerequisitesNeedReview: false });
       expect(edited.body.prerequisitesNeedReview).toBe(false);
     } finally {
-      await rules({ enabled: false, minCgpa: 0, manualIfPrerequisites: true }).expect(200);
+      await rules({ enabled: false, manualIfPrerequisites: true }).expect(200);
     }
   });
 });

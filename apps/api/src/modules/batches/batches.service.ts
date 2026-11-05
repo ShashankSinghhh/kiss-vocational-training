@@ -148,7 +148,6 @@ export async function detail(id: string, viewerRole: Role): Promise<BatchDetail>
             id: true,
             rollNo: true,
             phone: true,
-            cgpa: true,
             user: { select: { fullName: true, email: true } },
           },
         },
@@ -161,7 +160,6 @@ export async function detail(id: string, viewerRole: Role): Promise<BatchDetail>
       fullName: m.student.user.fullName,
       email: m.student.user.email,
       phone: m.student.phone,
-      cgpa: m.student.cgpa.toFixed(2),
       enrollmentStatus: m.enrollment.status,
       allocatedAt: m.allocatedAt.toISOString(),
     }));
