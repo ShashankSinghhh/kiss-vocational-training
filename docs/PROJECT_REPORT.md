@@ -436,11 +436,12 @@ gantt
     title Build and release schedule, 2026
     dateFormat YYYY-MM-DD
     axisFormat %b %d
+    todayMarker off
     section Build
-    Release 1: core (Sprints 0–7)       :r1, 2026-10-19, 2026-10-23
-    Gate 1: one student end to end      :milestone, g1, 2026-10-23, 0d
+    Release 1 – core (Sprints 0–7)       :r1, 2026-10-19, 2026-10-23
+    Gate 1 – one student end to end      :milestone, g1, 2026-10-23, 0d
     Releases 2–3 (Sprints 8–13)         :r23, 2026-10-23, 2026-10-26
-    Gate 2: unique features             :milestone, g2, 2026-10-26, 0d
+    Gate 2 – unique features             :milestone, g2, 2026-10-26, 0d
     section After release
     Review rounds and pull requests     :post, 2026-10-27, 2026-11-02
     Programmes and clean start          :prog, 2026-11-03, 2026-11-04
