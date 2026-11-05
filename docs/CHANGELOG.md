@@ -1,9 +1,24 @@
 # Changelog
 
 What changed in the portal, newest first. The reasons and the details of each change are in
-[PROGRESS.md](PROGRESS.md); the rules are in [BRD.md](BRD.md) (v1.2) and the design in
+[PROGRESS.md](PROGRESS.md); the rules are in [BRD.md](BRD.md) (v1.3) and the design in
 [TAD.md](TAD.md) (v1.2, Amendment 3). IDs in brackets are the review findings (S, A, D, T, P from
 the site test run; L from the logic review) and the BRD requirements and rules they touch.
+
+## v1.3 — open to every student, programmes, a demo cycle (2026-11-05)
+
+### Changed
+- **CGPA removed** (BR-04, BRQ-3.5). Vocational training is open to every student, so academic
+  marks are no longer recorded or used: no CGPA on Add user or in the CSV import (an old file
+  with a CGPA column still imports), no minimum-CGPA rule in automatic approval, and seats go by
+  preference rank, then submission time. The `students.cgpa` column is dropped.
+- **Programmes:** courses are grouped into five programmes; students choose a cycle, then a
+  programme, then one course.
+- **Name:** the portal is KISS SkillBridge.
+
+### Added
+- `pnpm db:seed --demo-cycle` / `--remove-demo-cycle`: a past demo cycle with a full term of
+  history (certificates, failures, at-risk students, the application queue) for demonstrations.
 
 ## v1.2.2 — low-severity security fixes (2026-11-02)
 
@@ -67,7 +82,8 @@ Everything else is in `main`.
 
 ### Added
 
-- **Automatic approval** of applications that meet admin-set rules: minimum CGPA, and a
+- **Automatic approval** of applications that meet admin-set rules (the minimum-CGPA rule was
+  removed in v1.3), and a
   per-course switch for whether prerequisites need a person (BRQ-3.5, D2).
 - **Students choose the training cycle** on the Courses page. Each cycle says whether it takes
   applications, open ones first (BRQ-2.4, L7).

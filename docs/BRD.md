@@ -14,7 +14,7 @@ be built.
   Document                            Business Requirements Document
                                       (BRD)
 
-  Version                             1.2 --- updated after Release 3
+  Version                             1.3 --- updated after Release 3
                                       with the changes made since (see
                                       the version table)
 
@@ -58,6 +58,15 @@ be built.
                                       every threshold is a setting the
                                       admin changes on the Automation
                                       page.
+
+  1.3 (2026-11-05)                    Open to every student: academic
+                                      marks (CGPA) are no longer
+                                      recorded or used. BR-04 now
+                                      orders by preference rank, then
+                                      submission time; BRQ-3.5 drops
+                                      the minimum-CGPA rule. Courses
+                                      are grouped into programmes
+                                      (cycle → programme → course).
 
   -----------------------------------------------------------------------
 
